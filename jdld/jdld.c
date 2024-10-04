@@ -27,7 +27,8 @@
  *
  * each command from jdld is responded to with K\n if everything's OK,
  * or ?\n if it has no idea what the eff you're talking about (e.g.
- * O when a file's already open)
+ * O when a file's already open). It also responds with V followed by
+ * a version string with a V command.
  *
  * this program is scary scary: you MUST have a reserved section of
  * memory at the jtag_mailbox otherwise you could make things go boom
@@ -46,7 +47,9 @@
 #include <signal.h>
 #include <stdint.h>
 
-// this is here to allow you to shut off the actual mailbox dump
+#define VERSION "1.0"
+
+// this is here to allow you to shutoff the actual mailbox dump
 // to test out commandy-stuff on a separate computer
 // if you comment this out, it actually opens /dev/null and never
 // actually tries to read from it (not that it would matter)
@@ -147,7 +150,11 @@ int main() {
     if (nb != -1) {
       printf("jdld: received string %s", lbuf);
       printf("jdld: string is %ld bytes\n", nb);
-      if (lbuf[0] == 'C') {
+      if (lbuf[0] == 'V') {
+	printf("jdld: got version request\n");
+	fprintf(rsp, "V %s\n", VERSION);
+      }
+      else if (lbuf[0] == 'C') {
 	const char *fnp = &lbuf[1];
 	printf("jdld: got create command\n");
 	if (destfd == -1) {
@@ -175,9 +182,9 @@ int main() {
 	  continue;
 	} else {
 	  size_t chunk_size;
-	  ssize_t wb;
+	  ssize_t wb = 0;
 	  if (lbuf[1] == 0x0A) {
-	    chunk_size == jtag_mailbox_size;
+	    chunk_size = jtag_mailbox_size;
 	  } else {
 	    const char *sizeptr = lbuf + 1;
 	    // strip the newline. again, don't eff this up.
@@ -204,6 +211,16 @@ int main() {
 	      goto cleanup;
 	    }
 	    wb = write(destfd, mbox_vptr, chunk_size);
+	    if (wb != chunk_size) {
+	      if (wb != -1) {
+		printf("jdld: only wrote %ld/%ld bytes??\n",
+		       wb,
+		       chunk_size);
+	      } else {
+		perror("jdld: write error");
+		// you HAVE to continue here, you MUST munmap
+	      }
+	    }
 	    munmap(mbox_vptr, jtag_mailbox_size);
 	    // END HERE THERE BE DRAGONS
 	  }
@@ -218,7 +235,10 @@ int main() {
 	    printf("jdld: file complete, closing\n");
 	    destfd = -1;
 	  }
-	  fprintf(rsp, "K\n");
+	  if (wb == chunk_size)
+	    fprintf(rsp, "K\n");
+	  else
+	    fprintf(rsp, "?\n");
 	}
       }
       else if (lbuf[0] == 'X') {

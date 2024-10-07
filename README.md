@@ -10,6 +10,27 @@ the ``standalone_xsdb`` script here into the ``xsdb/`` directory, and Bob's your
 
 Standalone xsdb takes about 5 megabytes and loads wacko fast.
 
+You probably also need hw_server, though (although xsdb can access a server on another physical machine).
+There is also a ``package_hwserver.sh`` script, which will make a standalone hw_server, and then
+you can use ``standalone_hw_server``.
+
+By default though this won't allow accessing any devices (other than an xvc device, probably?)
+since no drivers are there. The easiest way to fix that is to use Digilent devices and install
+Digilent Adept Runtime, which (shock!) is nicely packaged for Linux.
+
+https://lp.digilent.com/complete-adept-runtime-download
+
+### tl;dr
+
+1. Install [Digilent Adept runtime|https://lp.digilent.com/complete-adept-runtime-download].
+2. Run ``package.sh`` and ``package_hwserver.sh`` in an Vivado Lab install directory.
+3. Move ``standalone_xsdb.tar.gz`` and ``standalone_hw_server.tar.gz`` to machine you want to install stuff on.
+4. Unpack both of them.
+5. Run standalone_hw_server first, then you can run standalone_xsdb.
+
+It should be fairly obvious how this works, the scripts are like 3 lines long.
+Figure it out.
+
 ## Host utilities
 
 * jtransfer: horrible Python script to transfer files via the JTAG terminal using hex encoding (super slow)

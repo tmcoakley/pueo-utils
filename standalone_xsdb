@@ -3,4 +3,4 @@ SA_DIR=$(dirname "$0")
 export TCL_LIBRARY=$SA_DIR/tclLib/tcl8.5
 export LD_LIBRARY_PATH=$SA_DIR/$LD_LIBRARY_PATH
 
-rlwrap -rc -b "(){}[],+= & ^%$#@"";|\\" -f $SA_DIR/cmdlist $SA_DIR/rdi_xsdb
+rlwrap -rc -b "(){}[],+= & ^%$#@"";|\\" -f $SA_DIR/cmdlist $SA_DIR/rdi_xsdb $@

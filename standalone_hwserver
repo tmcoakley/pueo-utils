@@ -1,0 +1,5 @@
+#!/bin/bash
+SA_DIR=$(dirname "$0")
+export LD_LIBRARY_PATH=$SA_DIR/$LD_LIBRARY_PATH
+
+$SA_DIR/hw_server $@

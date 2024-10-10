@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # you need pysct for this
 # https://github.com/raczben/pysct
@@ -42,7 +42,7 @@ def getLine( sock ):
             if v > 1:
                 print('%s: got %d bytes, up to %d' %
                       (prog, len(data), len(msg)))
-            if msg[-1] == '\n':
+            if msg[-1:] == b'\n':
                 break
         except socket.timeout:
             print("%s: never received a line before timeout??" % prog)
@@ -79,8 +79,8 @@ finish = b'\x04'
 
 # what-freaking-ever
 modes = [ 'pynq', 'surf' ]
-promptDict = { 'pynq' : "xilinx@pynq:~$",
-           'surf' : "root@SURFv6:~#" }
+promptDict = { 'pynq' : b'xilinx@pynq:~$ ',
+           'surf' : b'root@SURFv6:~# ' }
 beginPromptDict = { 'pynq' : b'\x1b[?2004h',
                 'surf' : b'' }
 endcmdDict = { 'pynq' : b'\x1b[?2004l\r',
@@ -95,7 +95,7 @@ parser.add_argument("--xsdb", help="xsdb binary",
                     default="xsdb")
 parser.add_argument("--port", help="if specified, use running xsdb at this port",
                     default="")
-parser.add_argument("--connect", help="string to pass after connect",
+parser.add_argument("--connect", help="string to pass after connect if spawning xsct",
                     default="")
 parser.add_argument("--verbose", "-v", action="count", default=0,
                     help="Increase verbosity")
@@ -114,6 +114,9 @@ beginPrompt = promptDict[mode]
 newline = newlineDict[mode]
 endcmd = endcmdDict[mode]
 
+if v > 1:
+    print("%s: running in %s mode - expect prompt %s" % (prog, mode, prompt))
+
 remoteFileBytes = bytes(args.remoteFile, encoding='utf-8')
 
 print(args.xsdb)
@@ -126,7 +129,12 @@ if not os.path.exists(args.localFile):
 lfile = os.open(args.localFile, os.O_RDONLY)
 
 # connect to the xsct/xsdb server
-xsct = Xsct(host, port)
+if args.port:
+    xsct = Xsct(host, int(args.port))
+else:
+    print("%s: launching xsdb/xsct is still a work in progress" % prog)
+    exit(1)
+
 # get a tempfile
 tf = NamedTemporaryFile()
 
@@ -136,7 +144,7 @@ termPort = startStopUart(xsct, True)
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_address = (host, termPort)
 if v > 0:
-    print('%s: connecting to %s port %d' % (prog, host, port))
+    print('%s: connecting to %s port %d' % (prog, host, termPort))
 sock.connect(server_address)
 
 try:
@@ -176,6 +184,7 @@ try:
         print("%s: did not find prompt, maybe try --safeStart?" % prog)
         print("%s: got %d bytes - " % (prog, len(msg)))
         print("{!r}".format(msg))
+        print("expected {!r}".format(prompt))
         startStopUart(xsct, False)
         exit(1)
 
@@ -198,6 +207,7 @@ try:
         print("%s: jdld did not respond OK to file create (%s)" % (prog, ln[:-2]))
         print("%s: maybe a previous transfer is borked - open terminal, run jc, then send D0" % prog)
         sock.sendall(endfile)
+        sock.close()
         startStopUart(xsct, False)
         exit(1)
     # NOW IT'S FUN TIME
@@ -217,10 +227,13 @@ try:
             if resp != 'done':
                 print("%s: got response %s ????" % (prog, resp))
                 sock.sendall(b'D0\n'+endfile)
+                sock.close()
                 startStopUart(xsct, False)
                 exit(1)
+        if v > 0:
+            print("downloaded...", end='')
         if chunkLen != JDLD_CHUNK_SIZE:
-            dCommand = b'D'+str(chunkLen, encoding='utf-8')+'\n'
+            dCommand = b'D '+bytes(str(chunkLen), encoding='utf-8')+b'\n'
         else:
             dCommand = b'D\n'
         sock.sendall(dCommand)
@@ -228,8 +241,11 @@ try:
         if ln[:-2] != JDLD_OK:
             print("%s: jdld did not respond OK to chunk download (%s)!" % (prog, ln[:-2]))
             sock.sendall(endfile)
+            sock.close()
             startStopUart(xsct, False)
             exit(1)
+        if v > 0:
+            print("complete.")
         chunkCount = chunkCount + 1
         if chunkLen != JDLD_CHUNK_SIZE:
             break
@@ -238,6 +254,9 @@ try:
     print("%s: Download successful after %d chunks" % (prog, chunkCount))
     sock.sendall(endfile)
     # clear out the prompt
-    ln = getLine(sock)
+    ln = getExpected(sock, b'jc: exiting\r\n'+prompt)
+    sock.close()
     startStopUart(xsct, False)
-
+finally:
+    print("%s : exiting." % prog)
+    

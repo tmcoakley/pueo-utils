@@ -91,14 +91,15 @@ class PyZynqMP:
         if not os.path.isfile(filename):
             print("%s does not exist?" % filename)
             return False
+        basefn = os.path.basename(filename)
         # our flags are always 0 because it's a full load
         fd = os.open(self.FLAGS_PATH, os.O_WRONLY)
         os.write(fd, b'0\n')
         os.close(fd)
         # we can just use shutil because it'll use sendfile, wee!
-        shutil.copyfile(filename, self.LIBFIRMWARE_PATH + filename)
+        shutil.copyfile(filename, self.LIBFIRMWARE_PATH + basefn)
         fd = os.open(self.FIRMWARE_PATH, os.O_WRONLY)
-        os.write(fd, bytes(filename+b'\n', encoding='utf-8'))
+        os.write(fd, bytes(basefn+b'\n', encoding='utf-8'))
         os.close(fd)
         return True
 

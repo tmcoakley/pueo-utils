@@ -21,7 +21,7 @@ class PyZynqMP:
     STATE_PATH=FPGAMGR_PATH+"state"
     FLAGS_PATH=FPGAMGR_PATH+"flags"
     FIRMWARE_PATH=FPGAMGR_PATH+"firmware"
-    STATE_OPERATING=b'operating\n'
+    STATE_OPERATING=b'operating'
     IIO_PATH="/sys/bus/iio/devices/"
     IIO_DEVICE="iio:device0/"
     IIO_DEVICE_PATH=IIO_PATH+IIO_DEVICE
@@ -34,7 +34,7 @@ class PyZynqMP:
     PS_DNA_OFFSET = 12
 
     # fixed to volts, not millivolts
-    IIO_VOLTAGE_SCALE=0.000045776367
+    IIO_VOLT_SCALE=0.000045776367
     IIO_TEMP_SCALE=0.007771514892
     IIO_TEMP_OFFSET=-36058
     
@@ -66,12 +66,12 @@ class PyZynqMP:
     def __init__(self):
         # we can grab and store the eFuse crap internally
         # since it's static
-        fd = os.open(NVMEM_PATH, os.O_RDONLY)
+        fd = os.open(self.NVMEM_PATH, os.O_RDONLY)
         # silicon version
-        rb = os.pread(fd, 4, SILICON_VERSION_OFFSET)
+        rb = os.pread(fd, 4, self.SILICON_VERSION_OFFSET)
         self.silicon_version = struct.unpack('I', rb)[0]
         # dna
-        rb = os.pread(fd, 12, PS_DNA_OFFSET)
+        rb = os.pread(fd, 12, self.PS_DNA_OFFSET)
         dnaVals = struct.unpack('III', rb)
         # we store as a string
         self.dna = ('%8.8x' % dnaVals[2])
@@ -79,29 +79,22 @@ class PyZynqMP:
         self.dna += ('%8.8x' % dnaVals[0])
 
     def state(self):
-        # do... do you know what fpgautil does here
-        # it cats the output to a file and reads it
-        # what... the...
-        fd = os.open(STATE_PATH, os.O_RDONLY)
-        # this can only be a small length, like under 32 or some'n
-        state = os.read(fd, 32)
-        os.close(fd)
-        return state
+        return open(self.STATE_PATH).read()[:-1]
     
     def running(self):
         state = self.state()
-        return state == STATE_OPERATING
+        return state == self.STATE_OPERATING
 
     def load(self, filename):
         if not os.path.isfile(filename):
             print("%s does not exist?" % filename)
             return False
         # our flags are always 0 because it's a full load
-        fd = os.open(FLAGS_PATH, os.O_WRONLY)
+        fd = os.open(self.FLAGS_PATH, os.O_WRONLY)
         os.write(fd, b'0\n')
         os.close(fd)
         # we can just use shutil because it'll use sendfile, wee!
-        shutil.copyfile(filename, FIRMWARE_PATH)
+        shutil.copyfile(filename, self.FIRMWARE_PATH)
         return True
 
     def raw_iio(self, fnList):
@@ -109,27 +102,21 @@ class PyZynqMP:
             fnList = [ fnList ]
         rv = []
         for fn in fnList:
-            rv.append(int(open(IIO_DEVICE_PATH+fn).read()))
+            rv.append(int(open(self.IIO_DEVICE_PATH+fn).read()))
         return rv
     
     def raw_volts(self):
-        return self.raw_iio(list(iio_volts.values()))
+        return self.raw_iio(list(self.iio_volts.values()))
 
     def raw_temps(self):
-        return self.raw_iio(list(iio_temps.values()))
+        return self.raw_iio(list(self.iio_temps.values()))
 
     def monitor(self):
-        for tempKey in iio_temps:
-            val = raw_iio(iio_temps[tempKey])
-            print("%s : %f C" % (tempKey, (val+IIO_TEMP_OFFSET)*IIO_TEMP_SCALE))
-        for voltKey in iio_volts:
-            val = raw_iio(iio_volts[voltKey])
-            print("%s : %f V" % (voltKey, val*IIO_VOLT_SCALE))
-    
-    def version(self):
-        return self.silicon_version
-    
-    def dna(self):
-        return self.dna
+        for tempKey in self.iio_temps:
+            val = self.raw_iio(self.iio_temps[tempKey])[0]
+            print("%s : %f C" % (tempKey, (val+self.IIO_TEMP_OFFSET)*self.IIO_TEMP_SCALE))
+        for voltKey in self.iio_volts:
+            val = self.raw_iio(self.iio_volts[voltKey])[0]
+            print("%s : %f V" % (voltKey, val*self.IIO_VOLT_SCALE))
         
 

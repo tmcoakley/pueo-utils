@@ -41,6 +41,11 @@ Figure it out.
 * jdld: Program running on PetaLinux acting as a JTAG download daemon.
 * jc/jb: Program running on PetaLinux to allow easy console commanding. jb is just jc with no echoing.
 
+## Target image contents and tools
+
+* base_squashfs : this are the constant files that get built in the squashfs loaded at SURFv6 runtime
+* pueo-pyrun-extras : these are the extra modules that get built into pyrun
+* pyzynqmp : pure Python module for doing stuff with zynqmps
 
 # Details on standalone xsdb
 

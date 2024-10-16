@@ -17,6 +17,7 @@ import shutil
 class PyZynqMP:
     NVMEM_PATH="/sys/bus/nvmem/devices/zynqmp-nvmem0/nvmem"
     FPGAMGR_PATH="/sys/class/fpga_manager/fpga0/"
+    LIBFIRMWARE_PATH="/lib/firmware/"
     MODPARAM_PATH="/sys/module/zynqmp_fpga/parameters/"
     STATE_PATH=FPGAMGR_PATH+"state"
     FLAGS_PATH=FPGAMGR_PATH+"flags"
@@ -85,6 +86,7 @@ class PyZynqMP:
         state = self.state()
         return state == self.STATE_OPERATING
 
+    # firmware loading comes from /lib/firmware
     def load(self, filename):
         if not os.path.isfile(filename):
             print("%s does not exist?" % filename)
@@ -94,7 +96,10 @@ class PyZynqMP:
         os.write(fd, b'0\n')
         os.close(fd)
         # we can just use shutil because it'll use sendfile, wee!
-        shutil.copyfile(filename, self.FIRMWARE_PATH)
+        shutil.copyfile(filename, self.LIBFIRMWARE_PATH + filename)
+        fd = os.open(self.FIRMWARE_PATH, os.O_WRONLY)
+        os.write(fd, bytes(filename+b'\n', encoding='utf-8'))
+        os.close(fd)
         return True
 
     def raw_iio(self, fnList):

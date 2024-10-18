@@ -4,4 +4,5 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 PUEO_DIR="$(dirname "${SCRIPT_DIR}")"
 export LD_LIBRARY_PATH=${PUEO_DIR}/lib:$LD_LIBRARY_PATH
 export PYTHONPATH=${PUEO_DIR}/lib:${PUEO_DIR}/pylib:${PYTHONPATH}
-${PUEO_DIR}/bin/pyrun3.9-standard
+${PUEO_DIR}/bin/pyrun3.9-standard $@
+

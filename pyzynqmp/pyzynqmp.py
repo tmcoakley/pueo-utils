@@ -23,7 +23,7 @@ class PyZynqMP:
     STATE_PATH=FPGAMGR_PATH+"state"
     FLAGS_PATH=FPGAMGR_PATH+"flags"
     FIRMWARE_PATH=FPGAMGR_PATH+"firmware"
-    STATE_OPERATING=b'operating'
+    STATE_OPERATING='operating'
     # defines
     idcode_map = { 0x147E5093 : "zu25",
                    0x147FF093 : "zu47" }

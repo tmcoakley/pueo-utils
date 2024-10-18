@@ -160,7 +160,7 @@ if __name__ == "__main__":
               'orientation' : updateOrientation }
     updateFn = None    
     if len(sys.argv) != 2:
-        updateFn = None:
+        updateFn = None
     else:
         updateFn = fnMap.get(sys.argv[1], None)
     if updateFn is None:

@@ -5,6 +5,7 @@
 from smbus2 import SMBus
 import datetime
 import time
+import sys
 
 class PySOCEEPROM:
     PUEORFSOC = b'PUEORFSOC'
@@ -151,3 +152,19 @@ def updateOrientation():
     with SMBus(0) as bus:
         dev._writePage(bus, dev.ORIENTATIONPAGE, writeList)
     time.sleep(0.1)            
+
+if __name__ == "__main__":
+    import sys
+    fnMap = { 'ID' : updateID,
+              'location' : updateLocation,
+              'orientation' : updateOrientation }
+    updateFn = None    
+    if len(sys.argv) != 2:
+        updateFn = None:
+    else:
+        updateFn = fnMap.get(sys.argv[1], None)
+    if updateFn is None:
+        print("specify (exactly) one of: ID location orientation")
+        return
+
+    updateFn()

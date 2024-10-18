@@ -1,0 +1,6 @@
+#!/bin/bash
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+PUEO_DIR="$(dirname "${SCRIPT_DIR}")"
+
+python3 ${PUEO_DIR}/pylib/pysoceeprom.py $@

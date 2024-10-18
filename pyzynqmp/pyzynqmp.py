@@ -8,7 +8,7 @@ import shutil
 # - program it via the sysfs interface
 # - perform readback capture via sysfs interface
 # - read out sensors via IIO stuff
-# - read DNA via nvmem EFUSE stuff
+# - read DNA/IDCODE/etc. via pm and efuse
 # It doesn't hold any resources open when it does this stuff
 # so it's perfectly fine to be instantiated in multiple places.
 #
@@ -24,14 +24,25 @@ class PyZynqMP:
     FLAGS_PATH=FPGAMGR_PATH+"flags"
     FIRMWARE_PATH=FPGAMGR_PATH+"firmware"
     STATE_OPERATING=b'operating'
+    # defines
+    idcode_map = { 0x147E5093 : "zu25",
+                   0x147FF093 : "zu47" }
+    
+    # IIO
     IIO_PATH="/sys/bus/iio/devices/"
     IIO_DEVICE="iio:device0/"
     IIO_DEVICE_PATH=IIO_PATH+IIO_DEVICE
+
+    # PM (chipid)
+    PM_PATH=DEBUG_PATH+"zynqmp-firmware/pm"
+    PM_CHIPID="pm_get_chipid\n"
+
     # these are in progress
     READBACK_TYPE_PATH=MODPARAM_PATH+"readback_type"
     READBACK_LEN_PATH=MODPARAM_PATH+"readback_len"
     IMAGE_PATH=DEBUG_PATH+"fpga/fpga0/image"
-    PM_PATH=DEBUG_PATH+"zynqmp-firmware/pm"
+
+
     SILICON_VERSION_OFFSET = 0
     PS_DNA_OFFSET = 12
 
@@ -39,7 +50,8 @@ class PyZynqMP:
     IIO_VOLT_SCALE=0.000045776367
     IIO_TEMP_SCALE=0.007771514892
     IIO_TEMP_OFFSET=-36058
-    
+
+    # this is kinda PUEO-specific
     # we only grab an example of each voltage. read from power structure TE0835
     # ----0.853 is PL (VCCINT_0V85)
     # ----3.3 is PL (VCC_B88_HD)
@@ -66,6 +78,13 @@ class PyZynqMP:
                   "PSDDR" : "in_voltage10_vccpsddr_raw" }
     
     def __init__(self):
+        # grab the idcode and version (whaaatever)
+        open(self.PM_PATH, "w").write(self.PM_CHIPID)
+        chipidtok = open(self.PM_PATH).read().split(':')
+        # pm_get_chipid returns 'Idcode: 0xIDCODE, Version:0xVERSION'
+        self.idcode = int(chipidtok[1].split(',')[0], base=16)
+        self.device = self.idcode_map.get(self.idcode, 'Unknown')
+        self.version = int(chipidtok[2], base=16)
         # we can grab and store the eFuse crap internally
         # since it's static
         fd = os.open(self.NVMEM_PATH, os.O_RDONLY)

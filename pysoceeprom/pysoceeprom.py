@@ -33,7 +33,7 @@ class PySOCEEPROM:
             locationPage = self._readPage(bus, self.LOCATIONPAGE)
             orientationPage = self._readPage(bus, self.ORIENTATIONPAGE)
             
-            if bytes(socidPage)[0:9] != self.PUEORFSOC
+            if bytes(socidPage)[0:9] != self.PUEORFSOC:
                 self.socid = None
             else:
                 self.socid = int(bytes(socidPage)[9:])
@@ -45,7 +45,7 @@ class PySOCEEPROM:
                 self.location['date'] = self._todate(locationPage)
                 self.location['crate'] = bytes(locationPage[11])
                 self.location['slot'] = bytes(locationPage[12:13])
-            if orientationPage[0] = 0xFF:
+            if orientationPage[0] == 0xFF:
                 self.orientation = None
             else:
                 self.orientation = {}

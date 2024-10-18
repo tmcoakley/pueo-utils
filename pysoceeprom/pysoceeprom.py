@@ -165,6 +165,6 @@ if __name__ == "__main__":
         updateFn = fnMap.get(sys.argv[1], None)
     if updateFn is None:
         print("specify (exactly) one of: ID location orientation")
-        return
+        quit(1)
 
     updateFn()

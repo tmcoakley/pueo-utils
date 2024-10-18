@@ -18,6 +18,7 @@ class PyZynqMP:
     NVMEM_PATH="/sys/bus/nvmem/devices/zynqmp-nvmem0/nvmem"
     FPGAMGR_PATH="/sys/class/fpga_manager/fpga0/"
     MODPARAM_PATH="/sys/module/zynqmp_fpga/parameters/"
+    DEBUG_PATH="/sys/kernel/debug/"
     STATE_PATH=FPGAMGR_PATH+"state"
     FLAGS_PATH=FPGAMGR_PATH+"flags"
     FIRMWARE_PATH=FPGAMGR_PATH+"firmware"
@@ -28,8 +29,8 @@ class PyZynqMP:
     # these are in progress
     READBACK_TYPE_PATH=MODPARAM_PATH+"readback_type"
     READBACK_LEN_PATH=MODPARAM_PATH+"readback_len"
-    IMAGE_PATH="/sys/kernel/debug/fpga/fpga0/image"
-    
+    IMAGE_PATH=DEBUG_PATH+"fpga/fpga0/image"
+    PM_PATH=DEBUG_PATH+"zynqmp-firmware/pm"
     SILICON_VERSION_OFFSET = 0
     PS_DNA_OFFSET = 12
 

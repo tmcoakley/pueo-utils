@@ -111,6 +111,10 @@ def updateLocation():
             slot = slotStr
     writeStr = dev._fromdate(date) + '000' + crate + '00' + slot
     print("Writing Location:", writeStr)
+    yep = input("Enter yep if this looks OK: ")
+    if yep != 'yep':
+        print("Aborting")
+        return
     writeList = list(bytes(writeStr, encoding='utf-8'))
     with SMBus(0) as bus:
         dev._writePage(bus, dev.LOCATIONPAGE, writeList)
@@ -148,6 +152,11 @@ def updateOrientation():
 
     writeStr = dev._fromdate(date) + firstPhi.rjust(4, '0') + secondPhi.rjust(4, '0')
     print("Writing orientation:", writeStr)
+    yep = input("Enter yep if this looks OK: ")
+    if yep != 'yep':
+        print("Aborting")
+        return
+
     writeList = list(bytes(writeStr, encoding='utf-8'))
     with SMBus(0) as bus:
         dev._writePage(bus, dev.ORIENTATIONPAGE, writeList)

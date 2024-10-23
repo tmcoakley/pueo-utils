@@ -106,18 +106,20 @@ class PyZynqMP:
         state = self.state()
         return state == self.STATE_OPERATING
 
-    # firmware loading comes from /lib/firmware
     def load(self, filename):
         if not os.path.isfile(filename):
             print("%s does not exist?" % filename)
             return False
         basefn = os.path.basename(filename)
+        libfirmwarefn = self.LIBFIRMWARE_PATH + basefn
         # our flags are always 0 because it's a full load
         fd = os.open(self.FLAGS_PATH, os.O_WRONLY)
         os.write(fd, b'0\n')
         os.close(fd)
-        # we can just use shutil because it'll use sendfile, wee!
-        shutil.copyfile(filename, self.LIBFIRMWARE_PATH + basefn)
+        # check to see if we even need to do anything
+        if libfirmwarefn != filename:
+            shutil.copyfile(filename, libfirmwarefn)
+        # ok, now that it's there, load it
         fd = os.open(self.FIRMWARE_PATH, os.O_WRONLY)
         os.write(fd, bytes(basefn+b'\n', encoding='utf-8'))
         os.close(fd)

@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ "$#" -ne 1 ] ; then
+   echo "usage: build_squashfs <destination filename>"
+   
+DEST=$1
+# exclude bytecode
+mksquashfs /usr/local $1 -wildcards -e '*/__pycache__'

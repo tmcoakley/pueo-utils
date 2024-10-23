@@ -1,4 +1,4 @@
-# pueo_squashfs
+# pueo-squashfs
 
 This is the controlling script which handles the PUEO boot process.
 It is run at boot and persists around - restarting it relaunches
@@ -14,12 +14,12 @@ and copy it to the qspifs.
 
 If you want to change things in /usr/local easily, you can
 move /usr/local/boot.sh to /usr/local/boot.sh.tmp and restart
-pueo_squashfs, which will prevent the boot process from running and
+pueo-squashfs, which will prevent the boot process from running and
 you can make changes to /usr/local freely. Then move it back
 to boot.sh and restart it again, and it will launch.
 
 If you want to reset /usr/local to the qspifs state:
-1. stop pueo_squashfs
+1. stop pueo-squashfs
 2. either ``rm -rf /tmp/pueo`` or ``rm -rf
 /tmp/pueo/pueo_sqfs_working/*``
 
@@ -28,7 +28,7 @@ a little slower.
 
 ## Details
 
-pueo_squashfs does
+pueo-squashfs does
 
 1. look for /tmp/pueo. If it doesn't exist, create it and temporary
 subdirs.

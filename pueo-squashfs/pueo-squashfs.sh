@@ -49,6 +49,7 @@ mount_qspifs() {
 	exit 1
     fi
     echo "Mounting and attaching qspifs"
+    # catch these errors 
     ubiattach -m 2 /dev/ubi_ctrl
     # we do this read-only b/c we're just copying
     mount -o ro /dev/ubi0_0 /mnt

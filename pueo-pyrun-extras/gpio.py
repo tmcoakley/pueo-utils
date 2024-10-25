@@ -1,4 +1,5 @@
 # stripped down version of PYNQ/pynq/gpio.py: zynqmp only
+# we also fix the "you can't talk to MIO!!" stupidity
 #   Copyright (c) 2016, Xilinx, Inc.
 #   SPDX-License-Identifier: BSD-3-Clause
 #   modified PSA 10/23/24
@@ -47,7 +48,8 @@ class _GPIO:
 _gpio_map = weakref.WeakValueDictionary()
 
 class GPIO:
-    _GPIO_MIN_USER_PIN = 78
+    # idiots
+    _GPIO_MIN_EMIO_PIN = 78
     
     def __init__(self, gpio_index, direction):
         self._impl = None
@@ -104,21 +106,27 @@ class GPIO:
         base_path = GPIO.get_gpio_base_path(target_label)
         if base_path is not None:
             return int(''.join(x for x in base_path if x.isdigit()))
-        
+
+    # so stupid
     @staticmethod
-    def get_gpio_pin(gpio_user_index, target_label=None):
-        if target_label is not None:
+    def get_gpio_pin(gpio_user_index, gpio_type='EMIO'):
+        if gpio_type == 'MIO':
             GPIO_OFFSET = 0
         else:
-            GPIO_OFFSET = GPIO._GPIO_MIN_USER_PIN
+            GPIO_OFFSET = GPIO._GPIO_MIN_EMIO_PIN
         
-        return (GPIO.get_gpio_base(target_label)+GPIO_OFFSET+gpio_user_index)
+        return (GPIO.get_gpio_base("zynqmp_gpio")+GPIO_OFFSET+gpio_user_index)
     
     @staticmethod
-    def get_gpio_npins(target_label=None):
-        base_path = GPIO.get_gpio_base_path(target_label)
+    def get_gpio_npins(gpio_type='EMIO'):
+        base_path = GPIO.get_gpio_base_path("zynqmp_gpio")
         if base_path is not None:
             with open(os.path.join(base_path, "ngpio")) as fd:
                 ngpio = fd.read().rstrip()
-            return int(''.join(x for x in ngpio if x.isdigit()))
-        
+            raw = int(''.join(x for x in ngpio if x.isdigit()))
+            # YES THIS IS DUMB
+            if gpio_type == 'MIO':
+                return raw - (raw - GPIO._GPIO_MIN_EMIO_PIN)
+            else:
+                return raw - GPIO._GPIO_MIN_EMIO_PIN
+            

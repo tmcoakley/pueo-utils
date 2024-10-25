@@ -121,7 +121,7 @@ class PyZynqMP:
             shutil.copyfile(filename, libfirmwarefn)
         # ok, now that it's there, load it
         fd = os.open(self.FIRMWARE_PATH, os.O_WRONLY)
-        os.write(fd, bytes(basefn+b'\n', encoding='utf-8'))
+        os.write(fd, bytes(basefn+'\n', encoding='utf-8'))
         os.close(fd)
         return True
 

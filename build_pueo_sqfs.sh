@@ -24,9 +24,9 @@ done
 for d in ${PYTHON_DIRS} ; do
     cp -R $d ${WORKDIR}/pylib/
 done
-# SURF build is special
 
-
+# SURF build is special, it extracts stuff
+bash pueo_python/make_surf.sh ${WORKDIR}/pylib/
 
 for s in ${SCRIPTS} ; do
     cp $s ${WORKDIR}/bin/

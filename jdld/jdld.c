@@ -144,7 +144,7 @@ int main() {
   
   setlinebuf(rsp);
   setlinebuf(cmd);
-
+  fflush(stdout);
   while (!stop_requested) {
     nb = getline(&lbuf, &mx, cmd);
     if (nb != -1) {
@@ -248,6 +248,7 @@ int main() {
 	fprintf(rsp, "?\n");
       }
     }
+    fflush(stdout);
   }
   printf("jdld: exiting\n");
  cleanup:

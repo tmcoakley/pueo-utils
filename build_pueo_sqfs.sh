@@ -4,7 +4,7 @@
 PYTHON_SINGLE_FILES="pysoceeprom/pysoceeprom.py \
 	        pyzynqmp/pyzynqmp.py"
 # multi-file python modules wrapped in directories
-PYTHON_DIRS="pyrfdc/ \
+PYTHON_DIRS="pyrfdc/pyrfdc/ \
 	       s6clk/ "
 
 SCRIPTS="scripts/build_squashfs"
@@ -26,7 +26,7 @@ for d in ${PYTHON_DIRS} ; do
 done
 
 # SURF build is special, it extracts stuff
-bash pueo-python/make_surf.sh ${WORKDIR}/pylib/
+cd pueo-python && bash pueo-python/make_surf.sh ${WORKDIR}/pylib/
 
 for s in ${SCRIPTS} ; do
     cp $s ${WORKDIR}/bin/

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 # individual single-file python modules
-PYTHON_SINGLE_FILES = "pysoceeprom/pysoceeprom.py \
+PYTHON_SINGLE_FILES="pysoceeprom/pysoceeprom.py \
 	        pyzynqmp/pyzynqmp.py"
 # multi-file python modules wrapped in directories
-PYTHON_DIRS = "pyrfdc/ \
+PYTHON_DIRS="pyrfdc/ \
 	       s6clk/ "
 
-SCRIPTS = "scripts/build_squashfs"
+SCRIPTS="scripts/build_squashfs"
 
 if [ "$#" -ne 1 ] ; then
     echo "usage: build_pueo_sqfs.sh <destination filename>"

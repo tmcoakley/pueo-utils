@@ -26,7 +26,7 @@ for d in ${PYTHON_DIRS} ; do
 done
 
 # SURF build is special, it extracts stuff
-bash pueo_python/make_surf.sh ${WORKDIR}/pylib/
+bash pueo-python/make_surf.sh ${WORKDIR}/pylib/
 
 for s in ${SCRIPTS} ; do
     cp $s ${WORKDIR}/bin/

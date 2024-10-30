@@ -1,8 +1,9 @@
 # There are 2 possible clocks on the SURF6.
+# we wrote the LMK module
+from .LMK0461x import LMK0461x
 
 from electronics.gateways import LinuxDevice
 from electronics.devices import Si5395
-from LMK0461x import LMK0461x
 from enum import Enum
 
 import spi
@@ -18,11 +19,10 @@ from collections import defaultdict
 class SURF6Clock:
     class Revision(Enum):
         REVA = 'Rev A'
-        REVB = 'Rev B'
-        # maybe a rev B2 if there are breaking changes
+        REVB = 'Rev B/C'
         
-    def __init__(self):
-        self.gw = LinuxDevice(0)
+    def __init__(self, trenzClockBus=1):
+        self.gw = LinuxDevice(trenzClockBus)
         self.trenzClock = Si5395(self.gw, 0x69)
         surfClockPath = self._find_lmk()
         if surfClockPath is None:
@@ -37,7 +37,8 @@ class SURF6Clock:
             # We occasionally switch SYNC behavior so
             # make sure to force it properly here
             self.surfClockInit()
-    
+
+    # you HAVE TO DO THIS to read from an LMK on the SURF
     def surfClockInit(self):
         self.surfClock.writeRegister(0x141, 0x4)
         self.surfClock.writeRegister(0x142, 0x30)

@@ -32,6 +32,7 @@ for s in ${SCRIPTS} ; do
     cp $s ${WORKDIR}/bin/
 done
 
-mksquashfs ${WORKDIR} $1
+# avoid gitignores and pycaches
+mksquashfs ${WORKDIR} $1 -wildcards -ef pueo_sqfs.exclude
 rm -rf ${WORKDIR}
 

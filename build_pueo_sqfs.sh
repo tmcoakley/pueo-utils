@@ -24,6 +24,10 @@ done
 for d in ${PYTHON_DIRS} ; do
     cp -R $d ${WORKDIR}/pylib/
 done
+# SURF build is special
+
+
+
 for s in ${SCRIPTS} ; do
     cp $s ${WORKDIR}/bin/
 done

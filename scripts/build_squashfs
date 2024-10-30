@@ -1,7 +1,8 @@
 #!/bin/bash
 
 if [ "$#" -ne 1 ] ; then
-   echo "usage: build_squashfs <destination filename>"
+    echo "usage: build_squashfs <destination filename>"
+    exit 1
    
 DEST=$1
 # exclude bytecode

@@ -2,6 +2,8 @@
 # page 0 (SOCID)       says PUEO_RFSO_C###_#### (identifier)
 # page 1 (LOCATION)    says MMDD_YYYY_000C_00LS (date + crate + slot ID)
 # page 2 (ORIENTATION) says MMDD_YYYY_00PP_00QQ (date + first phi or LF + second phi or LF#)
+# page 3 (STARTUP)     says MMDD_YYYY_####_#### (state to stop at in startup)
+# page 4 (OVERRIDE)    says OVcc_cccc_cccc_cccc (bitstream override version)
 from smbus2 import SMBus
 import datetime
 import time
@@ -13,10 +15,14 @@ class PySOCEEPROM:
     SOCIDPAGE = 0
     LOCATIONPAGE = 1
     ORIENTATIONPAGE = 2
-    ORIENTATION_LF = 'LF'
+    ORIENTATION_LF = b'LF'
+    STARTUPPAGE = 3
+    OVERRIDEPAGE = 4
+    OVERRIDE_PFX = b'OV'
     
-    def __init__(self, bus=0, dev=0x50):
+    def __init__(self, bus=1, dev=0x50):
         self.dev = dev
+        self.bus = bus
         self.parseEeprom()
 
     def _readPage(self, bus, page):
@@ -44,10 +50,12 @@ class PySOCEEPROM:
         return date        
         
     def parseEeprom(self):
-        with SMBus(0) as bus:
+        with SMBus(self.bus) as bus:
             socidPage = self._readPage(bus, self.SOCIDPAGE)
             locationPage = self._readPage(bus, self.LOCATIONPAGE)
             orientationPage = self._readPage(bus, self.ORIENTATIONPAGE)
+            startupPage = self._readPage(bus, self.STARTUPPAGE)
+            overridePage = self._readPage(bus, self.OVERRIDEPAGE)
             
             if bytes(socidPage)[0:9] != self.PUEORFSOC:
                 self.socid = None
@@ -72,6 +80,18 @@ class PySOCEEPROM:
                 else:
                     self.orientation['phi'] = [ int(bytes(orientationPage[10:11])),
                                                 int(bytes(orientationPage[14:15]))]
+            if startupPage[0] == 0xFF:
+                self.startup = None
+            else:
+                self.startup = {}
+                self.startup['date'] = self._todate(startupPage)
+                self.startup['startup'] = int(bytes(startupPage[8:]))
+
+            if overridePage[0:1] != self.OVERRIDE_PFX:
+                self.override = None
+            else:
+                self.override = str(bytes(overridePage[2:]))
+                                              
 
 # update PUEORFSOC id
 def updateID():
@@ -83,7 +103,7 @@ def updateID():
         print('Aborting')
         return
     else:
-        with SMBus(0) as bus:
+        with SMBus(dev.bus) as bus:
             dint = list(paddedId)
             dev._writePage(bus, dev.SOCIDPAGE, dint)
         time.sleep(0.1)
@@ -116,7 +136,7 @@ def updateLocation():
         print("Aborting")
         return
     writeList = list(bytes(writeStr, encoding='utf-8'))
-    with SMBus(0) as bus:
+    with SMBus(dev.bus) as bus:
         dev._writePage(bus, dev.LOCATIONPAGE, writeList)
     time.sleep(0.1)
 
@@ -158,22 +178,78 @@ def updateOrientation():
         return
 
     writeList = list(bytes(writeStr, encoding='utf-8'))
-    with SMBus(0) as bus:
+    with SMBus(dev.bus) as bus:
         dev._writePage(bus, dev.ORIENTATIONPAGE, writeList)
     time.sleep(0.1)            
 
+# update the EEPROM startup state
+def updateStartup():
+    dev = PySOCEEPROM()
+    date_str = input("Enter today's date (MM/DD/YYYY), or enter to erase: ")
+    if len(date_str) == 0:
+        paddedStartup = b'\xFF'*16
+        yep = input("Clearing startup state - enter yep if this is OK: ")
+    else:
+        date = datetime.datetime.strptime(date_str, "%m/%d/%Y")
+        startup = input("Enter startup final state: ")
+        if len(startup) > 8:
+            print("Startup final state must be less than 8 characters.")
+            return
+        try:
+            val = int(startup)
+        except ValueError:
+            print("Startup final state must be string rep of base 10 integer.")
+            return
+        paddedStartupStr = dev._fromdate(date) + startup.rjust(8, '0')
+        paddedStartup = bytes(paddedStartupStr, encoding = 'utf-8')
+        print("Writing startup: %s", paddedStartupStr)
+        yep = input("Enter yep if this is OK: ")
+
+    if yep != 'yep':
+        print("Aborting")
+        return
+    writeList = list(paddedStartup)
+    with SMBus(dev.bus) as bus:
+        dev._writePage(bus, dev.STARTUPPAGE, writeList)
+    time.sleep(0.1)
+    
+def updateOverride():
+    dev = PySOCEEPROM()
+    override = input('Enter new override version (enter to erase): ')
+    if len(override) == 0:
+        paddedOverride = b'\xFF'*16
+    else:
+        paddedOverride = dev.OVERRIDE_PFX + bytes(override.rjust(14, \x00),
+                                                  encoding='utf-8')
+    if len(override) == 0:
+        yep = input('About to clear override: enter yep to proceed: ')
+    else:
+        yep = input('About to write %s : enter yep to proceed: ' % str(paddedOverride))
+    if yep != 'yep':
+        print('Aborting')
+        return
+    else:
+        with SMBus(dev.bus) as bus:
+            dint = list(paddedOverride)
+            dev._writePage(bus, dev.OVERRIDEPAGE, dint)
+        time.sleep(0.1)
+        
+
+    
 if __name__ == "__main__":
     import sys
     fnMap = { 'ID' : updateID,
               'location' : updateLocation,
-              'orientation' : updateOrientation }
+              'orientation' : updateOrientation,
+              'startup' : updateStartup,
+              'override' : updateOverride }
     updateFn = None    
     if len(sys.argv) != 2:
         updateFn = None
     else:
         updateFn = fnMap.get(sys.argv[1], None)
     if updateFn is None:
-        print("specify (exactly) one of: ID location orientation")
+        print("specify (exactly) one of: ID location orientation startup override")
         quit(1)
 
     updateFn()

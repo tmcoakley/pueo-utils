@@ -1,1 +1,1 @@
-from s6clk import SURF6Clock
+from .s6clk import SURF6Clock

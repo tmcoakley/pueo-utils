@@ -61,7 +61,7 @@ if __name__ == '__main__':
             exit(1)
         print("autoprog.py: most current firmware is %s" % mostCurrent[0])
         useThis = mostCurrent
-    if current_fw[1] == useThis[1]:
+    if current_fw and current_fw[1] == useThis[1]:
         print("autoprog.py: current is %s: don't need to load %s" % (current_fw[0], useThis[0]))
         exit(0)
     else:

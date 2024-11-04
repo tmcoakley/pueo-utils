@@ -55,7 +55,7 @@ if __name__ == '__main__':
             if not os.path.islink(p):
                 thisFw = _to_vrp(pfx, p)
                 if mostCurrent is None or thisFw[1] > mostCurrent[1]:
-                    thisFw = mostCurrent
+                    mostCurrent = thisFw
         if mostCurrent is None:
             print("autoprog.py: we have no firmware to load")
             exit(1)

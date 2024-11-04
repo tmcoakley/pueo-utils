@@ -124,7 +124,7 @@ class PyZynqMP:
         os.write(fd, bytes(basefn+'\n', encoding='utf-8'))
         os.close(fd)
         # update the current pointer
-        libcurfn = self.LIBFIRMWAREPATH + "current"
+        libcurfn = self.LIBFIRMWARE_PATH + "current"
         if os.path.exists(libcurfn):
             os.remove(libcurfn)        
         os.symlink(libfirmwarefn, libcurfn)

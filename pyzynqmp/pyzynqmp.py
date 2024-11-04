@@ -147,4 +147,23 @@ class PyZynqMP:
             val = self.raw_iio(self.iio_volts[voltKey])[0]
             print("%s : %f V" % (voltKey, val*self.IIO_VOLT_SCALE))
         
-
+if __name__ == "__main__":
+    import sys
+    newArg = None
+    zynq = PyZynqMP()
+    if len(sys.argv) != 2:
+        newArg = None
+    else: 
+        newArg = sys.argv[1]
+    if newArg is None: 
+        print("Specify one: monitor, dna, device, state")
+    elif newArg == 'monitor': 
+        zynq.monitor()
+    elif newArg == 'dna': 
+        print(zynq.dna)
+    elif newArg == 'device': 
+        print(zynq.device)
+    elif newArg == 'state': 
+        print(zynq.state())
+    else: 
+        print("Specify one: monitor, dna, device, state")

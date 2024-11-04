@@ -219,7 +219,7 @@ def updateOverride():
     if len(override) == 0:
         paddedOverride = b'\xFF'*16
     else:
-        paddedOverride = dev.OVERRIDE_PFX + bytes(override.rjust(14, \x00),
+        paddedOverride = dev.OVERRIDE_PFX + bytes(override.rjust(14, b'\x00'),
                                                   encoding='utf-8')
     if len(override) == 0:
         yep = input('About to clear override: enter yep to proceed: ')

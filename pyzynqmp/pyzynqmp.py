@@ -123,6 +123,11 @@ class PyZynqMP:
         fd = os.open(self.FIRMWARE_PATH, os.O_WRONLY)
         os.write(fd, bytes(basefn+'\n', encoding='utf-8'))
         os.close(fd)
+        # update the current pointer
+        libcurfn = self.LIBFIRMWAREPATH + "current"
+        if os.path.exists(libcurfn):
+            os.remove(libcurfn)        
+        os.symlink(libfirmwarefn, libcurfn)
         return True
 
     def raw_iio(self, fnList):

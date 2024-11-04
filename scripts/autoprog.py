@@ -17,11 +17,19 @@ def _to_vrp(pfx, fn):
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print("syntax: autoprog.py <fpga_bitstream_prefix> <python_config_class")
+        print("syntax: autoprog.py <fpga_bitstream_prefix> <python_config_class>")
         print("      : e.g. autoprog.py pueo_surf6 pysoceeprom.PySOCEEPROM")
         exit(1)
 
     pfx = sys.argv[1]
+    cfg = sys.argv[2]
+    # try handling cfg first
+    ml = cfg.split('.')
+    pymod = '.'.join(ml[:-1])
+    pycls = ml[-1]
+    m = import_module(pymod)
+    c = getattr(m, pycls)
+    prom = c()
     zynq = PyZynqMP()
     # if /lib/firmware/current doesn't exist, someone wants us to reload
     if zynq.state() != 'operating' or (not os.path.exists(CURFW)):
@@ -32,7 +40,6 @@ if __name__ == '__main__':
         # store as tuple of fn and version
         current_fw = _to_vrp(pfx, cur_fn)
 
-    prom = PySOCEEPROM()
     override = prom.override
     useThis = None
     if override:

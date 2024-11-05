@@ -234,7 +234,21 @@ def updateOverride():
             dev._writePage(bus, dev.OVERRIDEPAGE, dint)
         time.sleep(0.1)
         
-
+def dumpEeprom():
+    dev = PySOCEEPROM()
+    print("ID: ", dev.socid)
+    if dev.location:
+        print("Location: ", dev.location['crate'],dev.location['slot'])
+    if dev.orientation:
+        print("Orientation: ",end='')
+        if dev.orientation['phi']:
+            print(dev.orientation['phi'][0], " ", dev.orientation['phi'][1])
+        else:
+            print("%s%d" % (dev.ORIENTATION_LF, dev.orientation['lfid']))
+    if dev.startup:
+        print("Startup: ", dev.startup['startup'])
+    if dev.override:
+        print("Override: %s" % dev.override)            
     
 if __name__ == "__main__":
     import sys
@@ -242,14 +256,16 @@ if __name__ == "__main__":
               'location' : updateLocation,
               'orientation' : updateOrientation,
               'startup' : updateStartup,
-              'override' : updateOverride }
+              'override' : updateOverride,
+              'dump' : dumpEeprom }
     updateFn = None    
     if len(sys.argv) != 2:
         updateFn = None
     else:
         updateFn = fnMap.get(sys.argv[1], None)
     if updateFn is None:
-        print("specify (exactly) one of: ID location orientation startup override")
+        keys = ' '.join(list(fnMap.keys()))
+        print("specify (exactly) one of: %s" % keys)        
         quit(1)
 
     updateFn()

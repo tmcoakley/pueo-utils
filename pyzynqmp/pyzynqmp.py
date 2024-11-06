@@ -154,21 +154,24 @@ class PyZynqMP:
         
 if __name__ == "__main__":
     import sys
-    newArg = None
+    
     zynq = PyZynqMP()
-    if len(sys.argv) != 2:
-        newArg = None
+    # third option needed only for load
+    fi = None if len(sys.argv)<3 else sys.argv[2]
+    # map arguments to functions
+    fnMap = { 'monitor' : zynq.monitor,
+              'dna' : lambda z=zynq : print(z.dna),
+              'device' : lambda z=zynq : print(z.device),
+              'state' : lambda z=zynq : print(z.state()),
+              'load' : lambda z=zynq,fn=fi : z.load(fi) if fi is not None else print("Need a filename") }
+    
+    if len(sys.argv) < 2:
+        fn = None
     else: 
-        newArg = sys.argv[1]
-    if newArg is None: 
-        print("Specify one: monitor, dna, device, state")
-    elif newArg == 'monitor': 
-        zynq.monitor()
-    elif newArg == 'dna': 
-        print(zynq.dna)
-    elif newArg == 'device': 
-        print(zynq.device)
-    elif newArg == 'state': 
-        print(zynq.state())
-    else: 
-        print("Specify one: monitor, dna, device, state")
+        fn = fnMap.get(sys.argv[1], None)
+        
+    if fn is None:
+        keys = ' '.join(list(fnMap.keys()))
+        print("Specify one: %s" % keys)
+    else:
+        fn()

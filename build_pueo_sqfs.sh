@@ -7,7 +7,8 @@ PYTHON_SINGLE_FILES="pysoceeprom/pysoceeprom.py \
 PYTHON_DIRS="pyrfdc/pyrfdc/ \
 	       s6clk/ "
 
-SCRIPTS="scripts/build_squashfs"
+SCRIPTS="scripts/build_squashfs \
+         scripts/autoprog.py "
 
 if [ "$#" -ne 1 ] ; then
     echo "usage: build_pueo_sqfs.sh <destination filename>"

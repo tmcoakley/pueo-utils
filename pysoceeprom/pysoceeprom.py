@@ -24,7 +24,7 @@ class PySOCEEPROM:
     def __init__(self, bus=1, dev=0x50):
         self.dev = dev
         self.bus = bus
-        devStr = '/sys/bus/i2c-devices/%d-00%2.2x' % (bus, dev)
+        devStr = '/sys/bus/i2c/devices/%d-00%2.2x' % (bus, dev)
         p = Path(devStr)
         if not p.exists():
             raise IOError("device at bus %d dev %2.2x has no sysfs entry" % (bus, dev))

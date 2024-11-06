@@ -8,6 +8,7 @@ from smbus2 import SMBus
 import datetime
 import time
 import sys
+from pathlib import Path
 
 class PySOCEEPROM:
     PUEORFSOC = b'PUEORFSOC'
@@ -23,6 +24,13 @@ class PySOCEEPROM:
     def __init__(self, bus=1, dev=0x50):
         self.dev = dev
         self.bus = bus
+        devStr = '/sys/bus/i2c-devices/%d-00%2.2x' % (bus, dev)
+        p = Path(devStr)
+        if not p.exists():
+            raise IOError("device at bus %d dev %2.2x has no sysfs entry" % (bus, dev))
+        # unbind the driver if at24 is claiming it
+        if ( p / 'driver' ).exists():
+            ( p / 'driver' / 'unbind' ).write_text(p.name)
         self.parseEeprom()
 
     def _readPage(self, bus, page):

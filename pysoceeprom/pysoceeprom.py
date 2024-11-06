@@ -37,10 +37,10 @@ class PySOCEEPROM:
         return bus.read_i2c_block_data(self.dev,
                                        page*self.PAGELEN,
                                        self.PAGELEN)
-    def _writePage(self, bus, page):
+    def _writePage(self, bus, page, d):
         bus.write_i2c_block_data(self.dev,
-                                 page.self.PAGELEN,
-                                 self.PAGELEN)
+                                 page*self.PAGELEN,
+                                 d)
 
     @staticmethod
     def _fromdate(date):

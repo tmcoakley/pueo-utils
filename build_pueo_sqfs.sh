@@ -6,9 +6,12 @@ PYTHON_SINGLE_FILES="pysoceeprom/pysoceeprom.py \
 # multi-file python modules wrapped in directories
 PYTHON_DIRS="pyrfdc/pyrfdc/ \
 	       s6clk/ "
-
+# scripts
 SCRIPTS="scripts/build_squashfs \
          scripts/autoprog.py "
+
+# name of the autoexclude file
+SURFEXCLUDE="pueo_sqfs_surf.exclude"
 
 if [ "$#" -ne 1 ] ; then
     echo "usage: build_pueo_sqfs.sh <destination filename>"
@@ -19,6 +22,15 @@ DEST=$1
 WORKDIR=$(mktemp -d)
 
 cp -R base_squashfs/* ${WORKDIR}
+# autocreate the exclude
+echo "... __pycache__/*" > ${WORKDIR}/share/${SURFEXCLUDE}
+for f in `find python_squashfs -type f` ; do
+    FN=`basename $f`
+    FULLDIR=`dirname $f`
+    DIR=`basename $FULLDIR`
+    echo ${DIR}/${FN} >> ${WORKDIR}/share/${SURFEXCLUDE}
+done
+    
 for f in ${PYTHON_SINGLE_FILES} ; do
     cp $f ${WORKDIR}/pylib/
 done

@@ -3,7 +3,9 @@
 if [ "$#" -ne 1 ] ; then
     echo "usage: build_squashfs <destination filename>"
     exit 1
-   
+fi
+
 DEST=$1
-# exclude bytecode
-mksquashfs /usr/local $1 -wildcards -e '*/__pycache__'
+# exclude bytecode and base python stuff
+mksquashfs /usr/local $1 -wildcards -ef /usr/local/share/pueo_sqfs_surf.exclude
+

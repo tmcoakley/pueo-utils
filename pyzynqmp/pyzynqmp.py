@@ -192,10 +192,10 @@ class PyZynqMP:
             print("%s : %f V" % (voltKey, val*self.IIO_VOLT_SCALE))
 
     def pggs(self, num):
-        return int(open(self.GGS_DEVICE_PATH+"pggs%d" % num).read(),16)
+        return int(open(self.GGS_PATH+"pggs%d" % num).read(),16)
 
     def ggs(self, num):
-        return int(open(self.GGS_DEVICE_PATH+"ggs%d" % num).read(),16)
+        return int(open(self.GGS_PATH+"ggs%d" % num).read(),16)
         
             
 if __name__ == "__main__":

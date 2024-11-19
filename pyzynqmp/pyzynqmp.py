@@ -2,6 +2,35 @@ import os
 import struct
 import shutil
 
+# parses header for bitstream
+class Bitstream:
+    HEADER=b'\x00\t\x0f\xf0\x0f\xf0\x0f\xf0\x0f\xf0\x00\x00\x01'
+    def __init__(self, fn):
+        self.fn = fn
+        with open(fn, "rb") as f:
+            hc = f.read(len(self.HEADER))
+            if hc != self.HEADER:
+                raise TypeError("bit header not present")
+            keydlen = f.read(3)
+            dl, = struct.unpack(">H", keydlen[1:3])
+            designStr = f.read(dl)[:-1].decode()
+            designFields = designStr.split(";")
+            self.design = designFields[0]
+            self.userid = int(designFields[1].split("=")[1],16)
+            self.toolVersion = designFields[2].split("=")[1]
+            keylen = f.read(3)
+            dvl, = struct.unpack(">H", keylen[1:3])
+            self.device = f.read(dvl)[:-1].decode()
+            keydtlen = f.read(3)
+            dtl, = struct.unpack(">H", keydtlen[1:3])
+            self.date = f.read(dtl)[:-1].decode()
+            keytmlen = f.read(3)
+            tml, = struct.unpack(">H", keytmlen[1:3])
+            self.time = f.read(tml)[:-1].decode()
+            keyllen = f.read(5)
+            llen, = struct.unpack(">I", keyllen[1:5])
+            self.length = llen
+
 # this is an abstraction of the SoC for Python code
 # *running on the SoC*
 # it can:
@@ -9,6 +38,7 @@ import shutil
 # - perform readback capture via sysfs interface
 # - read out sensors via IIO stuff
 # - read DNA/IDCODE/etc. via pm and efuse
+# - read pggs registers
 # It doesn't hold any resources open when it does this stuff
 # so it's perfectly fine to be instantiated in multiple places.
 #
@@ -25,14 +55,17 @@ class PyZynqMP:
     FIRMWARE_PATH=FPGAMGR_PATH+"firmware"
     STATE_OPERATING='operating'
     # defines
-    idcode_map = { 0x147E5093 : "zu25",
-                   0x147FF093 : "zu47" }
+    idcode_map = { 0x147E5093 : "xczu25dr",
+                   0x147FF093 : "xczu47dr" }
     
     # IIO
     IIO_PATH="/sys/bus/iio/devices/"
     IIO_DEVICE="iio:device0/"
     IIO_DEVICE_PATH=IIO_PATH+IIO_DEVICE
 
+    # GGS/PGGS
+    GGS_PATH="/sys/devices/platform/firmware:zynqmp-firmware/"
+    
     # PM (chipid)
     PM_PATH=DEBUG_PATH+"zynqmp-firmware/pm"
     PM_CHIPID="pm_get_chipid\n"
@@ -108,8 +141,14 @@ class PyZynqMP:
 
     def load(self, filename):
         if not os.path.isfile(filename):
-            print("%s does not exist?" % filename)
-            return False
+            raise FileNotFoundError("%s does not exist" % filename)
+        # check if it's an actual bitstream
+        b = Bitstream(filename)
+        # check if it's for *us*
+        dev = b.device.split('-')[0]
+        if dev != self.device:
+            raise TypeError("%s is for a %s, this is a %s" %
+                            (filename, dev, self.device))
         basefn = os.path.basename(filename)
         libfirmwarefn = self.LIBFIRMWARE_PATH + basefn
         # our flags are always 0 because it's a full load
@@ -151,19 +190,28 @@ class PyZynqMP:
         for voltKey in self.iio_volts:
             val = self.raw_iio(self.iio_volts[voltKey])[0]
             print("%s : %f V" % (voltKey, val*self.IIO_VOLT_SCALE))
+
+    def pggs(self, num):
+        return int(open(self.GGS_DEVICE_PATH+"pggs%d" % num).read(),16)
+
+    def ggs(self, num):
+        return int(open(self.GGS_DEVICE_PATH+"ggs%d" % num).read(),16)
         
+            
 if __name__ == "__main__":
     import sys
     
     zynq = PyZynqMP()
-    # third option needed only for load
+    # third option needed only for load/ggs/pggs
     fi = None if len(sys.argv)<3 else sys.argv[2]
     # map arguments to functions
     fnMap = { 'monitor' : zynq.monitor,
               'dna' : lambda z=zynq : print(z.dna),
               'device' : lambda z=zynq : print(z.device),
               'state' : lambda z=zynq : print(z.state()),
-              'load' : lambda z=zynq,fn=fi : z.load(fi) if fi is not None else print("Need a filename") }
+              'ggs' : lambda z=zynq,arg=fi : z.ggs(int(arg)) if arg is not None else print("Need a GGS number"),
+              'pggs' : lambda z=zynq,arg=fi : z.pggs(int(arg)) if arg is not None else print("Need a PGGS number"),
+              'load' : lambda z=zynq,arg=fi : z.load(arg) if arg is not None else print("Need a filename") }
     
     if len(sys.argv) < 2:
         fn = None

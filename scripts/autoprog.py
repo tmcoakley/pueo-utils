@@ -8,13 +8,7 @@ from re import split as resplit
 LIBFWDIR = "/lib/firmware/"
 CURFW = LIBFWDIR + "current"
 
-# we construct a monotonic version here so comparisons are easy
-def _to_vrp(pfx, fn):
-    bfn = os.path.basename(fn)
-    vrp = list(map(int,resplit("v|r|p", bfn[len(pfx)+1:-4])[1:]))    
-    return ( LIBFWDIR+bfn,
-             vrp[0] << 12 + vrp[1] << 8 + vrp[2])
-
+# reworked entirely to use slot system
 if __name__ == '__main__':
     if len(sys.argv) < 3:
         print("syntax: autoprog.py <fpga_bitstream_prefix> <python_config_class>")

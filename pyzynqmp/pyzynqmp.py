@@ -209,8 +209,8 @@ if __name__ == "__main__":
               'dna' : lambda z=zynq : print(z.dna),
               'device' : lambda z=zynq : print(z.device),
               'state' : lambda z=zynq : print(z.state()),
-              'ggs' : lambda z=zynq,arg=fi : z.ggs(int(arg)) if arg is not None else print("Need a GGS number"),
-              'pggs' : lambda z=zynq,arg=fi : z.pggs(int(arg)) if arg is not None else print("Need a PGGS number"),
+              'ggs' : lambda z=zynq,arg=fi : print(z.ggs(int(arg))) if arg is not None else print("Need a GGS number"),
+              'pggs' : lambda z=zynq,arg=fi : print(z.pggs(int(arg))) if arg is not None else print("Need a PGGS number"),
               'load' : lambda z=zynq,arg=fi : z.load(arg) if arg is not None else print("Need a filename") }
     
     if len(sys.argv) < 2:

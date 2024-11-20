@@ -3,6 +3,7 @@ from pathlib import Path
 
 from importlib import import_module
 import sys
+import time
 from re import split as resplit
 
 LIBFWDIR = "/lib/firmware/"
@@ -39,25 +40,25 @@ if __name__ == '__main__':
             prom.updateEeprom()
     
     # are we running currently
-    if zynq.state() != 'operating' or (not os.path.exists(CURFW)):
+    if zynq.state() != 'operating' or (not os.path.islink(CURFW)):
         current_fw = None
     else:
         current_fw = os.readlink(CURFW)
     # what's the next pointer
-    if not os.path.exists(NXTFW):
+    if not os.path.islink(NXTFW):
         next_fw = None
     else:
         next_fw = os.readlink(NXTFW)
 
     # what are the slot pointers
     slot = [ None, None, None ]
-    for slotNum in range(3)
-        if os.path.exists(SLOTFW[i]):
-            slot[i] = os.readlink(SLOTFW[i])
+    for slotNum in range(3):
+        if os.path.exists(SLOTFW[slotNum]):
+            slot[slotNum] = os.readlink(SLOTFW[slotNum])
 
-    # if the next pointer is the current pointer, we do _nothing_
+    # if the next pointer is the current pointer and they're not None, we do _nothing_
     # bmForceReload is implemented by unlinking the 'current' pointer in software
-    if current_fw == next_fw:
+    if current_fw == next_fw and current_fw:
         print("autoprog.py: current/next both %s : skipping load" % current_fw)
         exit(0)
     # if there is a next pointer, use it
@@ -89,10 +90,10 @@ if __name__ == '__main__':
             print("autoprog.py: Loading %s threw an exception:" % slot[s], repr(e))
             exit(1)
     # by default next is current
-    if os.path.exists(CURFW):
+    if os.path.islink(CURFW):
         c = os.readlink(CURFW)
-        if os.path.exists(NXTFW):
-            os.unlink(NXTFW)
+        if os.path.exists(NXTFW) or os.path.islink(NXTFW):            
+            os.remove(NXTFW)
         os.symlink(c, NXTFW)        
     exit(0)
     

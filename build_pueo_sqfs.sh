@@ -46,6 +46,6 @@ for s in ${SCRIPTS} ; do
 done
 
 # avoid gitignores and pycaches
-mksquashfs ${WORKDIR} $1 -wildcards -ef pueo_sqfs.exclude
+mksquashfs ${WORKDIR} $1 -noappend -wildcards -ef pueo_sqfs.exclude
 rm -rf ${WORKDIR}
 

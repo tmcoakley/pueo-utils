@@ -21,10 +21,11 @@ from enum import Enum
 
 # SUPER-REWORKED MULTIPLE TIMES NOW
 # if you change anything internally you MUST MUST MUST
-# call update() to have it store to EITHER the EEPROM
-# OR the cache, and if you're accessing the EEPROM
-# you have to call update(updateEeprom=True) or else
-# it'll throw an exception.
+# call save() to have it store to the cache
+# you must call updateEeprom() to save to EEPROM
+# in EEPROM mode you must do a close() afterwards
+# to unbind the driver!
+# don't use any of the secret functions!!
 class PySOCEEPROM:
     PUEORFSOC = b'PUEORFSOC'
     PAGELEN = 16

@@ -7,59 +7,93 @@ from re import split as resplit
 
 LIBFWDIR = "/lib/firmware/"
 CURFW = LIBFWDIR + "current"
+NXTFW = LIBFWDIR + "next"
+SLOTFW = [ LIBFWDIR + "0", LIBFWDIR + "1", LIBFWDIR + "2" ]
 
 # reworked entirely to use slot system
 if __name__ == '__main__':
-    if len(sys.argv) < 3:
-        print("syntax: autoprog.py <fpga_bitstream_prefix> <python_config_class>")
-        print("      : e.g. autoprog.py pueo_surf6 pysoceeprom.PySOCEEPROM")
+    if len(sys.argv) < 2:
+        print("syntax: autoprog.py <python_config_class>")
+        print("      : e.g. autoprog.py pysoceeprom.PySOCEEPROM")
         exit(1)
 
-    pfx = sys.argv[1]
-    cfg = sys.argv[2]
+    cfg = sys.argv[1]
     # try handling cfg first
     ml = cfg.split('.')
     pymod = '.'.join(ml[:-1])
     pycls = ml[-1]
     m = import_module(pymod)
     c = getattr(m, pycls)
-    prom = c()
     zynq = PyZynqMP()
-    # if /lib/firmware/current doesn't exist, someone wants us to reload
+
+    # fetch load order config
+    bsLoadOrder = None
+    with c(mode='AUTO') as prom:
+        # if the prom specifies an override, immediately eliminate it in the EEPROM
+        # and kill it in the cache so that next time it loads the fallback
+        bsLoadOrder = prom.bsLoadOrder
+        if len(bsLoadOrder) == 1 and bsLoadOrder[0] != 0:
+            print("autoprog.py: override loading slot %d - next attempt will use 0" % bsLoadOrder[0])
+            prom.bsLoadOrder = [0]
+            prom.save()
+            prom.updateEeprom()
+    
+    # are we running currently
     if zynq.state() != 'operating' or (not os.path.exists(CURFW)):
         current_fw = None
     else:
-        cur_fn = os.readlink(CURFW)
-        # parse PREFIX_vXrYpZ.bit into (X,Y,Z) as ints, then make monotonic (4096*X+256*Y+Z)
-        # store as tuple of fn and version
-        current_fw = _to_vrp(pfx, cur_fn)
-
-    override = prom.override
-    useThis = None
-    if override:
-        useThisFn = LIBFWDIR + pfx + "_" + override + ".bit"
-        print("autoprog.py: override says to load %s" % fn)
-        if not os.path.exists(fn):
-            print("autoprog.py: override specified firmware DOES NOT EXIST! - falling back to most current")
-        else:
-            useThis = _to_vrp(pfx, useThisFn)
-    if useThis is None:
-        mostCurrent = None
-        for p in Path(LIBFWDIR).glob('*.bit'):
-            if not os.path.islink(p):
-                thisFw = _to_vrp(pfx, p)
-                if mostCurrent is None or thisFw[1] > mostCurrent[1]:
-                    mostCurrent = thisFw
-        if mostCurrent is None:
-            print("autoprog.py: we have no firmware to load")
-            exit(1)
-        print("autoprog.py: most current firmware is %s" % mostCurrent[0])
-        useThis = mostCurrent
-    if current_fw and current_fw[1] == useThis[1]:
-        print("autoprog.py: current is %s: don't need to load %s" % (current_fw[0], useThis[0]))
-        exit(0)
+        current_fw = os.readlink(CURFW)
+    # what's the next pointer
+    if not os.path.exists(NXTFW):
+        next_fw = None
     else:
-        print("autoprog.py: programming %s" % useThis[0])
-        zynq.load(useThis[0])
+        next_fw = os.readlink(NXTFW)
+
+    # what are the slot pointers
+    slot = [ None, None, None ]
+    for slotNum in range(3)
+        if os.path.exists(SLOTFW[i]):
+            slot[i] = os.readlink(SLOTFW[i])
+
+    # if the next pointer is the current pointer, we do _nothing_
+    # bmForceReload is implemented by unlinking the 'current' pointer in software
+    if current_fw == next_fw:
+        print("autoprog.py: current/next both %s : skipping load" % current_fw)
         exit(0)
-        
+    # if there is a next pointer, use it
+    if next_fw is not None:
+        loadOk = False
+        try:
+            print("autoprog.py: Programming %s" % next_fw)
+            zynq.load(next_fw)
+            loadOk = True
+        except Exception as e:
+            print("autoprog.py: Loading %s threw an exception:" % next_fw, repr(e))
+    else:
+        loadOk = False
+        # run the load order
+        for s in bsLoadOrder:
+            try:
+                print("autoprog.py: Programming %s" % slot[s])
+                zynq.load(slot[s])
+                loadOk = True
+            except Exception as e:
+                print("autoprog.py: Loading %s threw an exception:" % slot[s], repr(e))
+            if loadOk:
+                break
+    if not loadOk:
+        print("autoprog.py: Falling back to %s" % slot[0])
+        try:
+            zynq.load(slot[0])
+        except Exception as e:
+            print("autoprog.py: Loading %s threw an exception:" % slot[s], repr(e))
+            exit(1)
+    # by default next is current
+    if os.path.exists(CURFW):
+        c = os.readlink(CURFW)
+        if os.path.exists(NXTFW):
+            os.unlink(NXTFW)
+        os.symlink(c, NXTFW)        
+    exit(0)
+    
+    

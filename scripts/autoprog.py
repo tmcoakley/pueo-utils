@@ -53,7 +53,7 @@ if __name__ == '__main__':
     # what are the slot pointers
     slot = [ None, None, None ]
     for slotNum in range(3):
-        if os.path.exists(SLOTFW[slotNum]):
+        if os.path.islink(SLOTFW[slotNum]):
             slot[slotNum] = os.readlink(SLOTFW[slotNum])
 
     # if the next pointer is the current pointer and they're not None, we do _nothing_

@@ -1,6 +1,7 @@
 import os
 import struct
 import shutil
+from pathlib import Path
 
 # parses header for bitstream
 class Bitstream:
@@ -48,6 +49,7 @@ class PyZynqMP:
     NVMEM_PATH="/sys/bus/nvmem/devices/zynqmp-nvmem0/nvmem"
     FPGAMGR_PATH="/sys/class/fpga_manager/fpga0/"
     LIBFIRMWARE_PATH="/lib/firmware/"
+    CURRENT=LIBFIRMWARE_PATH + "current"
     MODPARAM_PATH="/sys/module/zynqmp_fpga/parameters/"
     DEBUG_PATH="/sys/kernel/debug/"
     STATE_PATH=FPGAMGR_PATH+"state"
@@ -74,7 +76,6 @@ class PyZynqMP:
     READBACK_TYPE_PATH=MODPARAM_PATH+"readback_type"
     READBACK_LEN_PATH=MODPARAM_PATH+"readback_len"
     IMAGE_PATH=DEBUG_PATH+"fpga/fpga0/image"
-
 
     SILICON_VERSION_OFFSET = 0
     PS_DNA_OFFSET = 12
@@ -111,9 +112,9 @@ class PyZynqMP:
                   "PSDDR" : "in_voltage10_vccpsddr_raw" }
     
     def __init__(self):
-        # grab the idcode and version (whaaatever)
-        open(self.PM_PATH, "w").write(self.PM_CHIPID)
-        chipidtok = open(self.PM_PATH).read().split(':')
+        p = Path(self.PM_PATH)
+        p.write_text(self.PM_CHIPID)
+        chipidtok = p.read_text().split(':')
         # pm_get_chipid returns 'Idcode: 0xIDCODE, Version:0xVERSION'
         self.idcode = int(chipidtok[1].split(',')[0], base=16)
         self.device = self.idcode_map.get(self.idcode, 'Unknown')
@@ -126,6 +127,7 @@ class PyZynqMP:
         self.silicon_version = struct.unpack('I', rb)[0]
         # dna
         rb = os.pread(fd, 12, self.PS_DNA_OFFSET)
+        os.close(fd)
         dnaVals = struct.unpack('III', rb)
         # we store as a string
         self.dna = ('%8.8x' % dnaVals[2])
@@ -133,7 +135,7 @@ class PyZynqMP:
         self.dna += ('%8.8x' % dnaVals[0])
 
     def state(self):
-        return open(self.STATE_PATH).read()[:-1]
+        return Path(self.STATE_PATH).read_text()[:-1]
     
     def running(self):
         state = self.state()
@@ -163,10 +165,9 @@ class PyZynqMP:
         os.write(fd, bytes(basefn+'\n', encoding='utf-8'))
         os.close(fd)
         # update the current pointer
-        libcurfn = self.LIBFIRMWARE_PATH + "current"
-        if os.path.exists(libcurfn) or os.path.islink(libcurfn):
-            os.remove(libcurfn)        
-        os.symlink(libfirmwarefn, libcurfn)
+        if os.path.exists(self.CURRENT) or os.path.islink(self.CURRENT):
+            os.remove(self.CURRENT)
+        os.symlink(libfirmwarefn, self.CURRENT)
         return True
 
     def raw_iio(self, fnList):
@@ -174,7 +175,7 @@ class PyZynqMP:
             fnList = [ fnList ]
         rv = []
         for fn in fnList:
-            rv.append(int(open(self.IIO_DEVICE_PATH+fn).read()))
+            rv.append(int(Path(self.IIO_DEVICE_PATH+fn).read_text()))
         return rv
     
     def raw_volts(self):
@@ -192,11 +193,15 @@ class PyZynqMP:
             print("%s : %f V" % (voltKey, val*self.IIO_VOLT_SCALE))
 
     def pggs(self, num):
-        return int(open(self.GGS_PATH+"pggs%d" % num).read(),16)
+        return int(Path(self.GGS_PATH+"pggs%d" % num).read_text(), 16)
 
     def ggs(self, num):
-        return int(open(self.GGS_PATH+"ggs%d" % num).read(),16)
-        
+        return int(Path(self.GGS_PATH+"ggs%d" % num).read_text(),16)
+
+    @staticmethod
+    def encodeReadbackType(frameno, capture=True):
+        return ((frameno << 1) | 0x80000001) if capture else ((frameno << 1) | 0x1)
+    
             
 if __name__ == "__main__":
     import sys

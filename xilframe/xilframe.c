@@ -1,8 +1,12 @@
+// xilframe P.S. Allison <allison.122@osu.edu> 11/25/24
+//
+// process framesets into data
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdint.h>
+#include <string.h>
 
 void xilprocess(uint8_t *src, uint8_t *dst);
 
@@ -16,7 +20,7 @@ void xilprocess(uint8_t *src, uint8_t *dst);
 // and we have 12 of 'em
 #define DATA_SIZE (12*BRAM_SIZE)
 int main(int argc, char **argv) {
-  int fd;
+  FILE *f;
   uint8_t *s;
   uint8_t *d;
   uint8_t *fp;
@@ -61,42 +65,38 @@ int main(int argc, char **argv) {
     printf("mem failure");
     exit(1);
   }
-  fd = open(*argv, O_RDONLY);
-  r = read(fd, s, FULL_SIZE);
-  close(fd);
+  if (!strcmp(argv[0], "-")) {
+    f = stdin;
+  } else {
+    f = fopen(*argv, "rb");
+  }
 
-  if (r != FULL_SIZE) {
-    printf("read err");
-    free(s);
-    free(d);
-    exit(1);
-  }
-  // d is now 95704 bytes. jump past dummy frame + dummy words
-  fp = s + 118*4;
-  // fp now points to the frames
-  // to access a specific frame, it's just
-  // fp[frameno*FRAME_SIZE]
-  // to access a specific BRAM it's
-  // fp[frameno*FRAME_SIZE+frame_offsets[bram]]
-  // so to rearrange, we write
-  // xilprocess(s[frameno*FRAME_SIZE+frame_offsets[bram]],
-  //            d[16*frameno + bram*BRAM_SIZE]);
-  for (int bram=0;bram<1;bram++) {
-    for (int frame=0;frame<1;frame++) {
-      for (int i=0;i<30;i++) {
-	printf("%d ", fp[frame*FRAME_SIZE+frame_offsets[bram]+i]);
+  do {
+    r = fread(s, sizeof(uint8_t), FULL_SIZE, f);
+    if (r == FULL_SIZE) {
+      // d is now 95704 bytes. jump past dummy frame + dummy words
+      fp = s + 118*4;
+      // fp now points to the frames
+      // to access a specific frame, it's just
+      // fp[frameno*FRAME_SIZE]
+      // to access a specific BRAM it's
+      // fp[frameno*FRAME_SIZE+frame_offsets[bram]]
+      // so to rearrange, we write
+      // xilprocess(s[frameno*FRAME_SIZE+frame_offsets[bram]],
+      //            d[16*frameno + bram*BRAM_SIZE]);
+      for (int bram=0;bram<1;bram++) {
+	for (int frame=0;frame<1;frame++) {	  
+	  xilprocess(&fp[frame*FRAME_SIZE+frame_offsets[bram]],
+		     &d[16*frame + bram*BRAM_SIZE]);
+	}
       }
-      printf("\n");
-      xilprocess(&fp[frame*FRAME_SIZE+frame_offsets[bram]],
-		 &d[16*frame + bram*BRAM_SIZE]);
-      for (int i=0;i<16;i++) {
-	printf("%d ", d[i]);
-      }
+      write(STDOUT_FILENO, d, DATA_SIZE);
     }
-  }
-  //  write(STDOUT_FILENO, d, DATA_SIZE);
+  } while(r == FULL_SIZE);
+
   free(s);
   free(d);
+  if (f != stdin) fclose(f);
 }
 
 

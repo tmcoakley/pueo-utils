@@ -14,7 +14,7 @@ void xilprocess(uint8_t *src, uint8_t *dst);
 // 95704 bytes
 // 23926 int32s
 // 118 dummy words + 256*(frames of 93 uint32 words)
-#define FULL_SIZE (118+256*FRAME_SIZE)
+#define FULL_SIZE (118*4+256*FRAME_SIZE)
 // each BRAM is 36 kbit but we only use 32 kbit = 4096
 #define BRAM_SIZE (4096)
 // and we have 12 of 'em

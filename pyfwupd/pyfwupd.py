@@ -18,6 +18,8 @@
 from pyzynqmp import Bitstream, PyZynqMP
 from gpio import GPIO 
 import os
+import selectors
+
 import struct
 import signal
 from subprocess import Popen, PIPE
@@ -51,15 +53,15 @@ class Converter:
         self.xf.stdin.write(fr)
         return self.xf.stdout.read(49152)
 
-# signal handler
+# signal handler, using self-pipe trick
 class SignalHandler:
     terminate = False
     def __init__(self):
-        signal.signal(signal.SIGINT, self.set_terminate)
-        signal.signal(signal.SIGTERM, self.set_terminate)
-
-    def set_terminate(self, signum, frame):
-        self.terminate = True
+        noop = lambda s,f : pass
+        self.rfd, self.wfd = os.pipe2(os.O_NONBLOCK | os.O_CLOEXEC)
+        signal.signal(signal.SIGINT, noop)
+        signal.signal(signal.SIGTERM, noop)
+        signal.set_wakeup_fd(self.wfd)
 
 # this is supertrimmed for PUEO
 class Event:
@@ -115,15 +117,27 @@ if __name__ == "__main__":
     curFile = None
     # spawn the converter
     conv = Converter()
-    # and open the event path
+    # spawn the selector
+    sel = selectors.DefaultSelectors()
 
     # dear god this is insane
     with open(EVENTPATH, "rb") as evf:
-        while not handler.terminate:
+        terminate = False
+        def set_terminate():
+            #actually read the pipe here
+            print("terminating")
+            terminate = True
+        def handleEvent():
+            #add the stuff below here
+        sel.register(evf, selectors.EVENT_READ, handleEvent)
+        sel.register(handler.rfd, selectors.EVENT_READ, set_terminate)
+        #do selecty thing here
+        
+        def handleEvent():
             e = evf.read(Event.LENGTH)
             if not e or len(e) != Event.LENGTH:
                 # uhhh what
-                continue            
+                return
             e = Event(evf.read(Event.LENGTH))
             if e.code is not None:
                 if e.code == state[0] and e.value == 1:
@@ -159,6 +173,7 @@ if __name__ == "__main__":
                         # should be only when a verbose option given!!
                         print("pyfwupd: %d/%d" % (curFile[1], dlen))
     print("pyfwupd: terminating")
+    #do something
     if curFile:
         print("pyfwupd: deleting incomplete file:", curFile)
 

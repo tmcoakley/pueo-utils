@@ -43,20 +43,20 @@ class Converter:
     def __init__(self):
         if not os.access(self.XILFRAME, os.X_OK):
             raise FileNotFoundError("cannot execute %s" % self.XILFRAME)
-        self.xf = subprocess.Popen([self.XILFRAME, self.XILFRAME_ARGS],
-                                   stdin=PIPE,
-                                   stdout=PIPE)
+        self.xf = Popen([self.XILFRAME, self.XILFRAME_ARGS],
+                        stdin=PIPE,
+                        stdout=PIPE)
 
     def convert(self, fr):
         self.xf.stdin.write(fr)
         return self.xf.stdout.read(49152)
 
-# signal handler
+from socket import socketpair, SOCK_DGRAM
 class SignalHandler:
     terminate = False
     def __init__(self):
-        signal.signal(signal.SIGINT, self.set_terminate)
-        signal.signal(signal.SIGTERM, self.set_terminate)
+        signal.signal(signal.SIGINT, self.push_signal)
+        signal.signal(signal.SIGTERM, self.push_signal)
 
     def set_terminate(self, signum, frame):
         self.terminate = True
@@ -68,11 +68,12 @@ class Event:
     LENGTH=struct.calcsize(FORMAT)
     def __init__(self, data):
         vals = struct.unpack(self.FORMAT, data)
-        if vals[1] == 0 and vals[2] == 0 and vals[3] == 0:
-            self.code = None
-        else:
+        print("pyfwupd: unpacked into", vals)
+        if vals[1] != 0 or vals[2] != 0 or vals[3] != 0:
             self.code = vals[3]
             self.value = vals[4]
+        else:
+            self.code = None
 
 if __name__ == "__main__":
     z = PyZynqMP()
@@ -100,16 +101,18 @@ if __name__ == "__main__":
     # okey dokey, starting up
     handler = SignalHandler()
     # we always write our length, it's constant
-    lenPath.write_text(FRAMELEN)
-    # start up with bank A mode
-    typePath.write_text(bankA)
-    stateA = (30, gpioA, bankA, None)
-    stateB = (31, gpioB, bankB, None)
+    lenPath.write_text(str(FRAMELEN))
+    stateA = [30, gpioA, str(bankA), None]
+    stateB = [31, gpioB, str(bankB), None]
 
     stateA[3] = stateB
     stateB[3] = stateA
 
+    # start up with bank A mode
+    # whenever you enter eDownloadMode you need to start with MARK_A
     state = stateA
+
+    typePath.write_text(state[2])
     
     # start with no file
     curFile = None
@@ -120,13 +123,20 @@ if __name__ == "__main__":
     # dear god this is insane
     with open(EVENTPATH, "rb") as evf:
         while not handler.terminate:
-            e = evf.read(Event.LENGTH)
-            if not e or len(e) != Event.LENGTH:
-                # uhhh what
+            eb = evf.read(Event.LENGTH)
+            print("pyfwupd: out of read wait, got %d bytes" % len(eb))
+            print(list(eb))
+            if not eb or len(eb) != Event.LENGTH:
+                # uhh what
+                print("pyfwupd: skipping malformed read")
                 continue            
-            e = Event(evf.read(Event.LENGTH))
-            if e.code is not None:
-                if e.code == state[0] and e.value == 1:
+            e = Event(eb)
+            if e.code is None:
+                print("pyfwupd: skipping marker")
+            else:
+                if e.code == state[0] and e.value == 0:
+                    print("pyfwupd: skipping clear mark event")
+                elif e.code == state[0] and e.value == 1:
                     # sooo much of this needs exception handling
                     r = image.read_bytes()
                     state[1].write(1)
@@ -137,6 +147,10 @@ if __name__ == "__main__":
                     data = conv.convert(r)
                     dlen = BANKLEN
                     if curFile is None:
+                        print("pyfwupd: no curFile")
+                        print("pyfwupd: marker:", list(data[0:4]))
+                        print("pyfwupd: length:", list(data[4:8]))
+                        print("pyfwupd: beginning of fn:", list(data[8:12]))
                         if data[0:4] != PYFW:
                             print("pyfwupd: communication error!")
                             print("pyfwupd: no current file but got", list(data[0:4]))
@@ -144,13 +158,15 @@ if __name__ == "__main__":
                             handler.set_terminate()
                             continue
                         else:
+                            print("pyfwupd: PYFW okay, unpacking header")
                             thisLen = struct.unpack(">I", data[4:8])
                             data = data[8:]
                             endFn = data.index(b'\x00')
                             thisFn = data[:endFn].decode()
                             data = data[endFn+1:]
                             dlen = len(data)
-                            curFile = (thisFn, thisLen)
+                            print("pyfwupd: beginning", thisFn, "len", thisLen)
+                            curFile = [thisFn, thisLen]
                     if dlen > curFile[1]:
                         print("pyfwupd: completed file %s" % curFile[0])
                         curFile = None
@@ -158,6 +174,9 @@ if __name__ == "__main__":
                         curFile[1] = curFile[1] - dlen
                         # should be only when a verbose option given!!
                         print("pyfwupd: %d/%d" % (curFile[1], dlen))
+                else:
+                    print("pyfwupd: code %d value %d ???" % (e.code, e.value))
+                    
     print("pyfwupd: terminating")
     if curFile:
         print("pyfwupd: deleting incomplete file:", curFile)

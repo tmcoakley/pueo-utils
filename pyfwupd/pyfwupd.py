@@ -18,6 +18,8 @@
 from pyzynqmp import Bitstream, PyZynqMP
 from gpio import GPIO 
 import os
+import selectors
+
 import struct
 import signal
 from subprocess import Popen, PIPE
@@ -51,15 +53,15 @@ class Converter:
         self.xf.stdin.write(fr)
         return self.xf.stdout.read(49152)
 
-from socket import socketpair, SOCK_DGRAM
+# signal handler, using self-pipe trick
 class SignalHandler:
     terminate = False
     def __init__(self):
-        signal.signal(signal.SIGINT, self.push_signal)
-        signal.signal(signal.SIGTERM, self.push_signal)
-
-    def set_terminate(self, signum, frame):
-        self.terminate = True
+        noop = lambda s,f : pass
+        self.rfd, self.wfd = os.pipe2(os.O_NONBLOCK | os.O_CLOEXEC)
+        signal.signal(signal.SIGINT, noop)
+        signal.signal(signal.SIGTERM, noop)
+        signal.set_wakeup_fd(self.wfd)
 
 # this is supertrimmed for PUEO
 class Event:
@@ -118,25 +120,36 @@ if __name__ == "__main__":
     curFile = None
     # spawn the converter
     conv = Converter()
-    # and open the event path
+    # spawn the selector
+    sel = selectors.DefaultSelectors()
 
     # dear god this is insane
     with open(EVENTPATH, "rb") as evf:
-        while not handler.terminate:
-            eb = evf.read(Event.LENGTH)
+        terminate = False
+        # create handler functions here
+        def set_terminate():
+            print("terminating")
+            terminate = True
+        def handleEvent():
+            e = evf.read(Event.LENGTH)
+            # info
             print("pyfwupd: out of read wait, got %d bytes" % len(eb))
             print(list(eb))
-            if not eb or len(eb) != Event.LENGTH:
-                # uhh what
-                print("pyfwupd: skipping malformed read")
-                continue            
-            e = Event(eb)
+            if not e or len(e) != Event.LENGTH:
+                # error
+                print("skipping malformed read")
+                return
+            e = Event(evf.read(Event.LENGTH))
             if e.code is None:
-                print("pyfwupd: skipping marker")
+                # debugging
+                print("skipping separator")
+                return
             else:
                 if e.code == state[0] and e.value == 0:
-                    print("pyfwupd: skipping clear mark event")
-                elif e.code == state[0] and e.value == 1:
+                    # debugging
+                    print("skipping clear event")
+                    return
+                if e.code == state[0] and e.value == 1:
                     # sooo much of this needs exception handling
                     r = image.read_bytes()
                     state[1].write(1)
@@ -147,16 +160,18 @@ if __name__ == "__main__":
                     data = conv.convert(r)
                     dlen = BANKLEN
                     if curFile is None:
+                        # info
                         print("pyfwupd: no curFile")
                         print("pyfwupd: marker:", list(data[0:4]))
                         print("pyfwupd: length:", list(data[4:8]))
                         print("pyfwupd: beginning of fn:", list(data[8:12]))
                         if data[0:4] != PYFW:
+                            # error
                             print("pyfwupd: communication error!")
                             print("pyfwupd: no current file but got", list(data[0:4]))
                             print("pyfwupd: instead of", list(PYFW))
-                            handler.set_terminate()
-                            continue
+                            terminate = True
+                            return
                         else:
                             print("pyfwupd: PYFW okay, unpacking header")
                             thisLen = struct.unpack(">I", data[4:8])
@@ -176,8 +191,18 @@ if __name__ == "__main__":
                         print("pyfwupd: %d/%d" % (curFile[1], dlen))
                 else:
                     print("pyfwupd: code %d value %d ???" % (e.code, e.value))
-                    
+            return        
+
+        sel.register(evf, selectors.EVENT_READ, handleEvent)
+        sel.register(handler.rfd, selectors.EVENT_READ, set_terminate)
+        #do selecty thing here
+        events = sel.select()
+        for key, mask in events:
+            callback = key.data
+            callback(key.fd)
+
     print("pyfwupd: terminating")
+    #do something
     if curFile:
         print("pyfwupd: deleting incomplete file:", curFile)
 

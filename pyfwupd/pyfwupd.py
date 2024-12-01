@@ -57,7 +57,7 @@ class Converter:
 class SignalHandler:
     terminate = False
     def __init__(self):
-        noop = lambda s,f : pass
+        noop = lambda s,f : None
         self.rfd, self.wfd = os.pipe2(os.O_NONBLOCK | os.O_CLOEXEC)
         signal.signal(signal.SIGINT, noop)
         signal.signal(signal.SIGTERM, noop)
@@ -121,7 +121,7 @@ if __name__ == "__main__":
     # spawn the converter
     conv = Converter()
     # spawn the selector
-    sel = selectors.DefaultSelectors()
+    sel = selectors.DefaultSelector()
 
     # dear god this is insane
     with open(EVENTPATH, "rb") as evf:

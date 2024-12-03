@@ -133,11 +133,12 @@ if __name__ == "__main__":
             print("terminating")
             terminate = True
         def handleEvent(fd):
-            e = fd.read(Event.LENGTH)
+            # don't actually use fd
+            eb = evf.read(Event.LENGTH)
             # info
             print("pyfwupd: out of read wait, got %d bytes" % len(eb))
             print(list(eb))
-            if not e or len(e) != Event.LENGTH:
+            if not eb or len(eb) != Event.LENGTH:
                 # error
                 print("skipping malformed read")
                 return

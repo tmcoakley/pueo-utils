@@ -133,6 +133,8 @@ if __name__ == "__main__":
             print("terminating")
             terminate = True
         def handleEvent(fd):
+            nonlocal state
+            
             # don't actually use fd
             eb = evf.read(Event.LENGTH)
             # info

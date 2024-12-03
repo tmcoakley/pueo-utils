@@ -73,7 +73,7 @@ class Event:
     def __init__(self, data):
         vals = struct.unpack(self.FORMAT, data)
         print("pyfwupd: unpacked into", vals)
-        if vals[1] != 0 or vals[2] != 0 or vals[3] != 0:
+        if vals[2] != 0 or vals[3] != 0 or vals[4] != 0:
             self.code = vals[3]
             self.value = vals[4]
         else:
@@ -108,14 +108,16 @@ if __name__ == "__main__":
     lenPath.write_text(str(FRAMELEN))
     stateA = [30, gpioA, str(bankA), None]
     stateB = [31, gpioB, str(bankB), None]
-
+    print("stateA is %d" % stateA[0])
+    print("stateB is %d" % stateB[0]) 
     stateA[3] = stateB
     stateB[3] = stateA
 
     # start up with bank A mode
     # whenever you enter eDownloadMode you need to start with MARK_A
     state = stateA
-
+    print("currently in state %d" % state[0])
+    
     typePath.write_text(state[2])
     
     # start with no file
@@ -130,10 +132,11 @@ if __name__ == "__main__":
         terminate = False
         # create handler functions here
         def set_terminate(fd):
-            print("terminating")
+            print("terminating while in state %d" % state[0])
             terminate = True
         def handleEvent(fd):
-            nonlocal state
+            # we modify state, need to mark it as a global
+            global state
             
             # don't actually use fd
             eb = evf.read(Event.LENGTH)
@@ -144,12 +147,13 @@ if __name__ == "__main__":
                 # error
                 print("skipping malformed read")
                 return
-            e = Event(evf.read(Event.LENGTH))
+            e = Event(eb)
             if e.code is None:
                 # debugging
                 print("skipping separator")
                 return
             else:
+                print("currently in state %d" % state[0])
                 if e.code == state[0] and e.value == 0:
                     # debugging
                     print("skipping clear event")

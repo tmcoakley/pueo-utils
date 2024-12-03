@@ -135,8 +135,9 @@ if __name__ == "__main__":
             print("terminating while in state %d" % state[0])
             terminate = True
         def handleEvent(fd):
-            # we modify state, need to mark it as a global
+            # we modify state/curFile, need to mark it as a global
             global state
+            global curFile
             
             # don't actually use fd
             eb = evf.read(Event.LENGTH)

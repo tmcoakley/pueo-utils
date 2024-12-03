@@ -184,7 +184,7 @@ if __name__ == "__main__":
                             return
                         else:
                             print("pyfwupd: PYFW okay, unpacking header")
-                            thisLen = struct.unpack(">I", data[4:8])
+                            thisLen = struct.unpack(">I", data[4:8])[0]
                             data = data[8:]
                             endFn = data.index(b'\x00')
                             thisFn = data[:endFn].decode()

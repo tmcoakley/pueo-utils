@@ -39,6 +39,7 @@ BANKLEN=49152
 
 # dunno how fast this will be, we'll see
 # some part of me thinks I should write this in the damn driver
+# or do a ctypes ffi call
 class Converter:
     XILFRAME = "/usr/local/bin/xilframe"
     XILFRAME_ARGS = "-"
@@ -53,7 +54,8 @@ class Converter:
         self.xf.stdin.write(fr)
         return self.xf.stdout.read(49152)
 
-# signal handler, using self-pipe trick
+# signal handler, using self-pipe trick. need to replicate
+# this for main pysurfHskd
 class SignalHandler:
     terminate = False
     def __init__(self):
@@ -127,11 +129,11 @@ if __name__ == "__main__":
     with open(EVENTPATH, "rb") as evf:
         terminate = False
         # create handler functions here
-        def set_terminate():
+        def set_terminate(fd):
             print("terminating")
             terminate = True
-        def handleEvent():
-            e = evf.read(Event.LENGTH)
+        def handleEvent(fd):
+            e = fd.read(Event.LENGTH)
             # info
             print("pyfwupd: out of read wait, got %d bytes" % len(eb))
             print(list(eb))

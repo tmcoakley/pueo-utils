@@ -18,12 +18,17 @@
 from pyzynqmp import Bitstream, PyZynqMP
 from gpio import GPIO 
 import os
+import logging
+import argparse
 import selectors
 
 import struct
 import signal
 from subprocess import Popen, PIPE
 from pathlib import Path
+
+LOG_NAME = 'pyfwupd'
+LOG_LEVEL = logging.INFO
 
 PYFW=b'PYFW'
 CURRENT=PyZynqMP.CURRENT
@@ -36,6 +41,32 @@ BANKOFFSET=0x40000
 
 FRAMELEN=95704
 BANKLEN=49152
+
+# https://stackoverflow.com/questions/2183233/how-to-add-a-custom-loglevel-to-pythons-logging-facility/35804945
+def addLoggingLevel(levelName, levelNum, methodName=None):
+    if not methodName:
+        methodName = levelName.lower()
+
+    if hasattr(logging, levelName):
+       raise AttributeError('{} already defined in logging module'.format(levelName))
+    if hasattr(logging, methodName):
+       raise AttributeError('{} already defined in logging module'.format(methodName))
+    if hasattr(logging.getLoggerClass(), methodName):
+       raise AttributeError('{} already defined in logger class'.format(methodName))
+
+    # This method was inspired by the answers to Stack Overflow post
+    # http://stackoverflow.com/q/2183233/2988730, especially
+    # http://stackoverflow.com/a/13638084/2988730
+    def logForLevel(self, message, *args, **kwargs):
+        if self.isEnabledFor(levelNum):
+            self._log(levelNum, message, args, **kwargs)
+    def logToRoot(message, *args, **kwargs):
+        logging.log(levelNum, message, *args, **kwargs)
+
+    logging.addLevelName(levelNum, levelName)
+    setattr(logging, levelName, levelNum)
+    setattr(logging.getLoggerClass(), methodName, logForLevel)
+    setattr(logging, methodName, logToRoot)
 
 # dunno how fast this will be, we'll see
 # some part of me thinks I should write this in the damn driver
@@ -72,7 +103,6 @@ class Event:
     LENGTH=struct.calcsize(FORMAT)
     def __init__(self, data):
         vals = struct.unpack(self.FORMAT, data)
-        print("pyfwupd: unpacked into", vals)
         if vals[2] != 0 or vals[3] != 0 or vals[4] != 0:
             self.code = vals[3]
             self.value = vals[4]
@@ -81,6 +111,16 @@ class Event:
 
 if __name__ == "__main__":
     z = PyZynqMP()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-v', '--verbose', action='count', default=0)
+    args = parser.parse_args()
+    logLevel = LOG_LEVEL - 5*args.verbose
+    addLoggingLevel('TRACE', logging.DEBUG - 5)
+    addLoggingLevel('DETAIL', logging.INFO - 5)
+    
+    logger = logging.getLogger(LOG_NAME)
+    logging.basicConfig(level=logLevel)
+        
     err = None
     try:
         if z.state() != 'operating':
@@ -91,7 +131,7 @@ if __name__ == "__main__":
         if userid == 0xFFFFFFFF:
             raise RuntimeError("UserID does not have frame start")
     except Exception as e:
-        print("pyfwupd: cannot start up -", repr(e))
+        logger.error("cannot start up - " + repr(e))
         exit(1)
 
     bankA = PyZynqMP.encodeReadbackType(userid, capture=True)
@@ -108,15 +148,15 @@ if __name__ == "__main__":
     lenPath.write_text(str(FRAMELEN))
     stateA = [30, gpioA, str(bankA), None]
     stateB = [31, gpioB, str(bankB), None]
-    print("stateA is %d" % stateA[0])
-    print("stateB is %d" % stateB[0]) 
+    logger.debug("stateA is %d (%s)" % (stateA[0], stateA[2]))
+    logger.debug("stateB is %d (%s)" % (stateB[0], stateB[2]))
     stateA[3] = stateB
     stateB[3] = stateA
 
     # start up with bank A mode
     # whenever you enter eDownloadMode you need to start with MARK_A
     state = stateA
-    print("currently in state %d" % state[0])
+    logger.detail("currently in state %d" % state[0])
     
     typePath.write_text(state[2])
     
@@ -132,8 +172,11 @@ if __name__ == "__main__":
         terminate = False
         # create handler functions here
         def set_terminate(fd):
-            print("terminating while in state %d" % state[0])
+            global terminate
+            
+            logger.info("terminating while in state %d" % state[0])
             terminate = True
+            
         def handleEvent(fd):
             # we modify state/curFile, need to mark it as a global
             global state
@@ -142,22 +185,20 @@ if __name__ == "__main__":
             # don't actually use fd
             eb = evf.read(Event.LENGTH)
             # info
-            print("pyfwupd: out of read wait, got %d bytes" % len(eb))
-            print(list(eb))
+            logger.debug("out of read wait, got %d bytes" % len(eb))
+            logger.debug(list(eb))
             if not eb or len(eb) != Event.LENGTH:
-                # error
-                print("skipping malformed read")
+                logger.error("skipping malformed read")
                 return
             e = Event(eb)
             if e.code is None:
-                # debugging
-                print("skipping separator")
+                logger.detail("skipping separator")
                 return
             else:
-                print("currently in state %d" % state[0])
+                logger.detail("currently in state %d" % state[0])
                 if e.code == state[0] and e.value == 0:
-                    # debugging
-                    print("skipping clear event")
+                    # this shouldn't happen, it's a clear event for the one we're on
+                    logger.warning("code %d value %d ????" % (e.code, e.value))
                     return
                 if e.code == state[0] and e.value == 1:
                     # sooo much of this needs exception handling
@@ -170,51 +211,62 @@ if __name__ == "__main__":
                     data = conv.convert(r)
                     dlen = BANKLEN
                     if curFile is None:
-                        # info
-                        print("pyfwupd: no curFile")
-                        print("pyfwupd: marker:", list(data[0:4]))
-                        print("pyfwupd: length:", list(data[4:8]))
-                        print("pyfwupd: beginning of fn:", list(data[8:12]))
+                        logger.detail("no curFile - parsing first block")
+                        logger.debug("marker:" + str(list(data[0:4])))
+                        logger.debug("length:" + str(list(data[4:8])))
+                        logger.debug("beginning of fn:" + str(list(data[8:12])))
                         if data[0:4] != PYFW:
-                            # error
-                            print("pyfwupd: communication error!")
-                            print("pyfwupd: no current file but got", list(data[0:4]))
-                            print("pyfwupd: instead of", list(PYFW))
+                            logger.error("communication error: no file, but got " + str(list(data[0:4])))
                             terminate = True
                             return
-                        else:
-                            print("pyfwupd: PYFW okay, unpacking header")
-                            thisLen = struct.unpack(">I", data[4:8])[0]
-                            data = data[8:]
-                            endFn = data.index(b'\x00')
-                            thisFn = data[:endFn].decode()
-                            data = data[endFn+1:]
-                            dlen = len(data)
-                            print("pyfwupd: beginning", thisFn, "len", thisLen)
+                        else:                            
+                            logger.detail("PYFW okay, unpacking header")
+                            try:
+                                thisLen = struct.unpack(">I", data[4:8])[0]
+                                # index of the null terminator
+                                endFn = data[8:].index(b'\x00')
+                                # now sum through the checksum, which is after the null terminator
+                                cks = sum(data[:endFn+1]) % 256                                
+                                if cks != 0:
+                                    logger.error(list(data[:endFn+1]))
+                                    raise ValueError("checksum failed: %2.2x" % cks)
+                                thisFn = data[:endFn].decode()
+                                data = data[endFn+1:]
+                                dlen = len(data)
+                            except Exception as e:
+                                logger.error("Header unpack failed: " + repr(e))
+                                terminate = True
+                                return
+                            logger.info("beginning " + thisFn + " len " + str(thisLen))
                             curFile = [thisFn, thisLen]
                     if dlen > curFile[1]:
-                        print("pyfwupd: completed file %s" % curFile[0])
+                        logger.info("completed file %s" % curFile[0])
                         curFile = None
                     else:
                         curFile[1] = curFile[1] - dlen
-                        # should be only when a verbose option given!!
-                        print("pyfwupd: %d/%d" % (curFile[1], dlen))
+                        logger.detail("%s: %d bytes, %d remaining" % (curFile[0], dlen, curFile[1]))
                 else:
-                    print("pyfwupd: code %d value %d ???" % (e.code, e.value))
+                    if e.code == state[3][0] and e.value == 0:
+                        logger.detail("release event seen")
+                    else:
+                        logger.warning("code %d value %d ???" % (e.code, e.value))
+                    return
             return        
-
+        
         sel.register(evf, selectors.EVENT_READ, handleEvent)
         sel.register(handler.rfd, selectors.EVENT_READ, set_terminate)
         #do selecty thing here
-        events = sel.select()
-        for key, mask in events:
-            callback = key.data
-            callback(key.fd)
+        while not terminate:
+            events = sel.select()
+            for key, mask in events:
+                callback = key.data
+                callback(key.fd)
 
-    print("pyfwupd: terminating")
+
+    logger.info("terminating")
     #do something
     if curFile:
-        print("pyfwupd: deleting incomplete file:", curFile)
+        logger.warning("deleting incomplete file:" + curFile[0])
 
     # kill both psdones if needed
     stateA[1].write(1)

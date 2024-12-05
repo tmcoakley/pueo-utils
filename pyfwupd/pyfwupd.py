@@ -227,7 +227,7 @@ if __name__ == "__main__":
                             # (so in python you add 2 b/c the end slice index is 1 after your final)
                             cks = sum(data[:endFn+2]) % 256                                
                             if cks != 0:
-                                logger.error(list(data[:endFn+1]))
+                                logger.error(list(data[:endFn+2]))
                                 raise ValueError("checksum failed: %2.2x" % cks)
                             thisFn = data[8:endFn].decode()
                             data = data[endFn+2:]

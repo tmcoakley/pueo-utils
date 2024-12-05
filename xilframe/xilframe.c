@@ -16,9 +16,15 @@ void xilprocess(uint8_t *src, uint8_t *dst);
 // 118 dummy words + 256*(frames of 93 uint32 words)
 #define FULL_SIZE (118*4+256*FRAME_SIZE)
 // each BRAM is 36 kbit but we only use 32 kbit = 4096
-#define BRAM_SIZE (4096)
+// the size is actually 256 frames of 16 bytes
+#define BRAM_SIZE_PER_FRAME (16)
+#define NUM_FRAME (256)
+#define BRAM_SIZE ((BRAM_SIZE_PER_FRAME)*(NUM_FRAME))
 // and we have 12 of 'em
-#define DATA_SIZE (12*BRAM_SIZE)
+#define NUM_BRAM (12)
+#define DATA_SIZE ((NUM_BRAM)*(BRAM_SIZE))
+
+
 int main(int argc, char **argv) {
   FILE *f;
   uint8_t *s;
@@ -84,10 +90,10 @@ int main(int argc, char **argv) {
       // so to rearrange, we write
       // xilprocess(s[frameno*FRAME_SIZE+frame_offsets[bram]],
       //            d[16*frameno + bram*BRAM_SIZE]);
-      for (int bram=0;bram<1;bram++) {
-	for (int frame=0;frame<1;frame++) {	  
+      for (int bram=0;bram<NUM_BRAM;bram++) {
+	for (int frame=0;frame<NUM_FRAME;frame++) {	  
 	  xilprocess(&fp[frame*FRAME_SIZE+frame_offsets[bram]],
-		     &d[16*frame + bram*BRAM_SIZE]);
+		     &d[BRAM_SIZE_PER_FRAME*frame + bram*BRAM_SIZE]);
 	}
       }
       write(STDOUT_FILENO, d, DATA_SIZE);

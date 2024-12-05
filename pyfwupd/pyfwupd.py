@@ -215,30 +215,29 @@ if __name__ == "__main__":
                         logger.debug("marker:" + str(list(data[0:4])))
                         logger.debug("length:" + str(list(data[4:8])))
                         logger.debug("beginning of fn:" + str(list(data[8:12])))
-                        if data[0:4] != PYFW:
-                            logger.error("communication error: no file, but got " + str(list(data[0:4])))
+                        try:
+                            if data[0:4] != PYFW:
+                                raise ValueError("communication error: no file, but got " + str(list(data[0:4])))
+                            logger.detail("PYFW okay, unpacking header")
+
+                            thisLen = struct.unpack(">I", data[4:8])[0]
+                            # index of the null terminator
+                            endFn = data[8:].index(b'\x00') + 8
+                            # now sum through the checksum, which is after the null terminator
+                            # (so in python you add 2 b/c the end slice index is 1 after your final)
+                            cks = sum(data[:endFn+2]) % 256                                
+                            if cks != 0:
+                                logger.error(list(data[:endFn+1]))
+                                raise ValueError("checksum failed: %2.2x" % cks)
+                            thisFn = data[8:endFn].decode()
+                            data = data[endFn+2:]
+                            dlen = len(data)
+                        except Exception as e:
+                            logger.error("Header unpack failed: " + repr(e))
                             terminate = True
                             return
-                        else:                            
-                            logger.detail("PYFW okay, unpacking header")
-                            try:
-                                thisLen = struct.unpack(">I", data[4:8])[0]
-                                # index of the null terminator
-                                endFn = data[8:].index(b'\x00')
-                                # now sum through the checksum, which is after the null terminator
-                                cks = sum(data[:endFn+1]) % 256                                
-                                if cks != 0:
-                                    logger.error(list(data[:endFn+1]))
-                                    raise ValueError("checksum failed: %2.2x" % cks)
-                                thisFn = data[:endFn].decode()
-                                data = data[endFn+1:]
-                                dlen = len(data)
-                            except Exception as e:
-                                logger.error("Header unpack failed: " + repr(e))
-                                terminate = True
-                                return
-                            logger.info("beginning " + thisFn + " len " + str(thisLen))
-                            curFile = [thisFn, thisLen]
+                        logger.info("beginning " + thisFn + " len " + str(thisLen))
+                        curFile = [thisFn, thisLen]
                     if dlen > curFile[1]:
                         logger.info("completed file %s" % curFile[0])
                         curFile = None
@@ -255,7 +254,14 @@ if __name__ == "__main__":
         
         sel.register(evf, selectors.EVENT_READ, handleEvent)
         sel.register(handler.rfd, selectors.EVENT_READ, set_terminate)
-        #do selecty thing here
+        # we can now mark things as ready. evf is already open,
+        # so when we select below, even if something comes in while
+        # we're setting it back to zero, we'll still see it.
+        stateA[1].write(1)
+        stateB[1].write(1)
+        stateA[1].write(0)
+        stateB[1].write(0)
+        # do selecty thing here
         while not terminate:
             events = sel.select()
             for key, mask in events:
@@ -268,9 +274,6 @@ if __name__ == "__main__":
     if curFile:
         logger.warning("deleting incomplete file:" + curFile[0])
 
-    # kill both psdones if needed
-    stateA[1].write(1)
-    stateA[1].write(0)
-    stateB[1].write(1)
-    stateB[1].write(0)
+    # we do NOT need to clear psdones, because they autoclear
+    # when download mode is turned off.
     

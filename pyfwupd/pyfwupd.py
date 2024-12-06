@@ -18,6 +18,7 @@
 from pyzynqmp import Bitstream, PyZynqMP
 from gpio import GPIO 
 import os
+import shutil
 import logging
 import argparse
 import selectors
@@ -309,7 +310,7 @@ if __name__ == "__main__":
     #do something
     if curFile:
         logger.warning("file " + curFile[0] + " is incomplete, deleting temporary!!")
-        tempfile.close()
+        tempFile.close()
         os.unlink(TMPPATH)
 
     # we do NOT need to clear psdones, because they autoclear

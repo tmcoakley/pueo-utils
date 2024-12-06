@@ -3,6 +3,10 @@
 # boot script is magic, it will always rename to boot.sh
 BOOTSCRIPT="boot_script/boot_dummy.sh"
 
+# version script and file
+VERSCRIPT="create_pueo_sqfs_version.py"
+VERFILE="PUEO_SQFS_VERSION"
+
 # individual single-file python modules
 PYTHON_SINGLE_FILES="pysoceeprom/pysoceeprom.py \
 	        pyzynqmp/pyzynqmp.py"
@@ -29,6 +33,9 @@ echo "Boot script is ${BOOTSCRIPT}."
 cp ${BOOTSCRIPT} ${WORKDIR}/boot.sh
 
 cp -R base_squashfs/* ${WORKDIR}
+# now version the thing
+$VERSCRIPT ${WORKDIR} ${VERFILE}
+
 # autocreate the exclude
 echo "... __pycache__/*" > ${WORKDIR}/share/${SURFEXCLUDE}
 for f in `find python_squashfs -type f` ; do

@@ -256,10 +256,10 @@ if __name__ == "__main__":
                         curFile = [thisFn, thisLen]
                     if dlen > curFile[1]:
                         try:
-                            tempFile.write(data[:dlen+1))
+                            tempFile.write(data[:dlen+1])
                             logger.info("completed file %s" % curFile[0])
                             # close the temporary file
-                            close(tempFile)
+                            tempFile.close()
                             # move it to its final destination
                             shutil.move(TMPPATH, curFile[0])
                             # and get a new one

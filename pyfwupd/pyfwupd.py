@@ -28,7 +28,7 @@ from subprocess import Popen, PIPE
 from pathlib import Path
 
 LOG_NAME = 'pyfwupd'
-LOG_LEVEL = logging.INFO
+LOG_LEVEL = logging.WARNING
 
 PYFW=b'PYFW'
 CURRENT=PyZynqMP.CURRENT
@@ -37,10 +37,16 @@ READBACK_LEN_PATH=PyZynqMP.READBACK_LEN_PATH
 IMAGE_PATH=PyZynqMP.IMAGE_PATH
 EVENTPATH="/dev/input/event0"
 
+TMPPATH="/tmp/pyfwupd.tmp"
+
 BANKOFFSET=0x40000
 
 FRAMELEN=95704
 BANKLEN=49152
+
+# we START UP in WARNING which is 30, and will print virtually nothing
+# -v displays just file transfers begins/ends (INFO)
+# -vv (DETAIL), -vvv (DEBUG), and -vvvv (TRACE) display progressively more
 
 # https://stackoverflow.com/questions/2183233/how-to-add-a-custom-loglevel-to-pythons-logging-facility/35804945
 def addLoggingLevel(levelName, levelNum, methodName=None):
@@ -114,6 +120,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-v', '--verbose', action='count', default=0)
     args = parser.parse_args()
+    # just make the first -v count double
+    if args.verbose:
+        args.verbose += 1
     logLevel = LOG_LEVEL - 5*args.verbose
     addLoggingLevel('TRACE', logging.DEBUG - 5)
     addLoggingLevel('DETAIL', logging.INFO - 5)
@@ -132,7 +141,7 @@ if __name__ == "__main__":
             raise RuntimeError("UserID does not have frame start")
     except Exception as e:
         logger.error("cannot start up - " + repr(e))
-        exit(1)
+        exit(-1)
 
     bankA = PyZynqMP.encodeReadbackType(userid, capture=True)
     bankB = PyZynqMP.encodeReadbackType(userid+BANKOFFSET, capture=True)
@@ -161,7 +170,11 @@ if __name__ == "__main__":
     typePath.write_text(state[2])
     
     # start with no file
-    curFile = None
+    curFile = None    
+    # start with no horrible errors
+    horribleProblem = None
+    # open the temporary file...
+    tempFile = open(TMPPATH, "w+b")    
     # spawn the converter
     conv = Converter()
     # spawn the selector
@@ -181,27 +194,29 @@ if __name__ == "__main__":
             # we modify state/curFile, need to mark it as a global
             global state
             global curFile
+            global tempFile
             
             # don't actually use fd
             eb = evf.read(Event.LENGTH)
             # info
             logger.debug("out of read wait, got %d bytes" % len(eb))
-            logger.debug(list(eb))
+            logger.trace(list(eb))
             if not eb or len(eb) != Event.LENGTH:
                 logger.error("skipping malformed read")
                 return
             e = Event(eb)
             if e.code is None:
-                logger.detail("skipping separator")
+                logger.debug("skipping separator")
                 return
             else:
-                logger.detail("currently in state %d" % state[0])
+                logger.detail("processing an event: currently in state %d" % state[0])
                 if e.code == state[0] and e.value == 0:
                     # this shouldn't happen, it's a clear event for the one we're on
                     logger.warning("code %d value %d ????" % (e.code, e.value))
                     return
                 if e.code == state[0] and e.value == 1:
-                    # sooo much of this needs exception handling
+                    # sooo much of this needs exception handling!!
+                    # this is like, absurdly awful!!
                     r = image.read_bytes()
                     state[1].write(1)
                     state[1].write(0)
@@ -212,13 +227,13 @@ if __name__ == "__main__":
                     dlen = BANKLEN
                     if curFile is None:
                         logger.detail("no curFile - parsing first block")
-                        logger.debug("marker:" + str(list(data[0:4])))
-                        logger.debug("length:" + str(list(data[4:8])))
-                        logger.debug("beginning of fn:" + str(list(data[8:12])))
+                        logger.trace("marker:" + str(list(data[0:4])))
+                        logger.trace("length:" + str(list(data[4:8])))
+                        logger.trace("beginning of fn:" + str(list(data[8:12])))
                         try:
                             if data[0:4] != PYFW:
                                 raise ValueError("communication error: no file, but got " + str(list(data[0:4])))
-                            logger.detail("PYFW okay, unpacking header")
+                            logger.debug("PYFW okay, unpacking header")
 
                             thisLen = struct.unpack(">I", data[4:8])[0]
                             # index of the null terminator
@@ -227,25 +242,42 @@ if __name__ == "__main__":
                             # (so in python you add 2 b/c the end slice index is 1 after your final)
                             cks = sum(data[:endFn+2]) % 256                                
                             if cks != 0:
-                                # temporary
-                                logger.error(list(data[0:16]))
-                                logger.error(list(data[16:32]))
-                                logger.error(list(data[32:48]))
-                                #logger.error(list(data[:endFn+2]))                                
+                                logger.error(list(data[:endFn+2]))                                
                                 raise ValueError("checksum failed: %2.2x" % cks)
                             thisFn = data[8:endFn].decode()
                             data = data[endFn+2:]
                             dlen = len(data)
                         except Exception as e:
-                            logger.error("Header unpack failed: " + repr(e))
+                            horribleProblem = -2
+                            logger.error("First frame failed: " + repr(e))
                             terminate = True
                             return
                         logger.info("beginning " + thisFn + " len " + str(thisLen))
                         curFile = [thisFn, thisLen]
                     if dlen > curFile[1]:
-                        logger.info("completed file %s" % curFile[0])
+                        try:
+                            tempFile.write(data[:dlen+1))
+                            logger.info("completed file %s" % curFile[0])
+                            # close the temporary file
+                            close(tempFile)
+                            # move it to its final destination
+                            shutil.move(TMPPATH, curFile[0])
+                            # and get a new one
+                            tempFile = open(TMPPATH, "w+b")
+                        except Exception as e:
+                            horribleProblem = -3
+                            logger.error("Finishing file failed: " + repr(e))
+                            terminate = True
+                            return
                         curFile = None
                     else:
+                        try:
+                            tempFile.write(data)
+                        except Exception as e:
+                            horribleProblem = -4
+                            logger.error("Writing to file failed: " + repr(e))
+                            terminate = True
+                            return
                         curFile[1] = curFile[1] - dlen
                         logger.detail("%s: %d bytes, %d remaining" % (curFile[0], dlen, curFile[1]))
                 else:
@@ -276,7 +308,9 @@ if __name__ == "__main__":
     logger.info("terminating")
     #do something
     if curFile:
-        logger.warning("deleting incomplete file:" + curFile[0])
+        logger.warning("file " + curFile[0] + " is incomplete, deleting temporary!!")
+        close(tempFile)
+        os.unlink(TMPPATH)
 
     # we do NOT need to clear psdones, because they autoclear
     # when download mode is turned off.

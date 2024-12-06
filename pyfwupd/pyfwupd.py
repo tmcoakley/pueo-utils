@@ -257,7 +257,9 @@ if __name__ == "__main__":
                         curFile = [thisFn, thisLen]
                     if dlen > curFile[1]:
                         try:
-                            tempFile.write(data[:curFile[1]+1])
+                            # grr curFile[1] is right: it's # of bytes remaining
+                            # and b[0:5] grabs the first 5 bytes
+                            tempFile.write(data[:curFile[1]])
                             logger.info("completed file %s" % curFile[0])
                             # close the temporary file
                             tempFile.close()

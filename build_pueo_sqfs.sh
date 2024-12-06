@@ -4,7 +4,7 @@
 BOOTSCRIPT="boot_script/boot_dummy.sh"
 
 # version script and file
-VERSCRIPT="create_pueo_sqfs_version.py"
+VERSCRIPT="./create_pueo_sqfs_version.py"
 VERFILE="PUEO_SQFS_VERSION"
 
 # individual single-file python modules

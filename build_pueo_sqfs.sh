@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# boot script is magic, it will always rename to boot.sh
+BOOTSCRIPT="boot_script/boot_dummy.sh"
+
 # individual single-file python modules
 PYTHON_SINGLE_FILES="pysoceeprom/pysoceeprom.py \
 	        pyzynqmp/pyzynqmp.py"
@@ -21,6 +24,10 @@ fi
 DEST=$1
 WORKDIR=$(mktemp -d)
 
+echo "Creating pueo.sqfs."
+echo "Boot script is ${BOOTSCRIPT}."
+cp ${BOOTSCRIPT} ${WORKDIR}/boot.sh
+
 cp -R base_squashfs/* ${WORKDIR}
 # autocreate the exclude
 echo "... __pycache__/*" > ${WORKDIR}/share/${SURFEXCLUDE}
@@ -39,6 +46,7 @@ for d in ${PYTHON_DIRS} ; do
 done
 
 # SURF build is special, it extracts stuff
+echo "Building the SURF contents from pueo-python."
 bash pueo-python/make_surf.sh ${WORKDIR}/pylib/
 
 for s in ${SCRIPTS} ; do
@@ -49,3 +57,4 @@ done
 mksquashfs ${WORKDIR} $1 -noappend -wildcards -ef pueo_sqfs.exclude
 rm -rf ${WORKDIR}
 
+echo "Complete."

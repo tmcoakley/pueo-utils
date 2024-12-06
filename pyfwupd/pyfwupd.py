@@ -309,7 +309,7 @@ if __name__ == "__main__":
     #do something
     if curFile:
         logger.warning("file " + curFile[0] + " is incomplete, deleting temporary!!")
-        close(tempFile)
+        tempfile.close()
         os.unlink(TMPPATH)
 
     # we do NOT need to clear psdones, because they autoclear

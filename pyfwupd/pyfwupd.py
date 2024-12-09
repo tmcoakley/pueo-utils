@@ -142,7 +142,7 @@ if __name__ == "__main__":
             raise RuntimeError("UserID does not have frame start")
     except Exception as e:
         logger.error("cannot start up - " + repr(e))
-        exit(-1)
+        exit(1)
 
     bankA = PyZynqMP.encodeReadbackType(userid, capture=True)
     bankB = PyZynqMP.encodeReadbackType(userid+BANKOFFSET, capture=True)
@@ -249,7 +249,7 @@ if __name__ == "__main__":
                             data = data[endFn+2:]
                             dlen = len(data)
                         except Exception as e:
-                            horribleProblem = -2
+                            horribleProblem = 2
                             logger.error("First frame failed: " + repr(e))
                             terminate = True
                             return
@@ -268,7 +268,7 @@ if __name__ == "__main__":
                             # and get a new one
                             tempFile = open(TMPPATH, "w+b")
                         except Exception as e:
-                            horribleProblem = -3
+                            horribleProblem = 3
                             logger.error("Finishing file failed: " + repr(e))
                             terminate = True
                             return
@@ -277,7 +277,7 @@ if __name__ == "__main__":
                         try:
                             tempFile.write(data)
                         except Exception as e:
-                            horribleProblem = -4
+                            horribleProblem = 4
                             logger.error("Writing to file failed: " + repr(e))
                             terminate = True
                             return

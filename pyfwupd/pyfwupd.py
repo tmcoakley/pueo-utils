@@ -307,13 +307,17 @@ if __name__ == "__main__":
                 callback = key.data
                 callback(key.fd)
 
-
-    logger.info("terminating")
-    #do something
     if curFile:
         logger.warning("file " + curFile[0] + " is incomplete, deleting temporary!!")
         tempFile.close()
         os.unlink(TMPPATH)
+                
+    if horribleProblem:
+        logger.error("terminating with horrible error %d" % horribleProblem)
+        exit(horribleProblem)
+    else:
+        logger.info("terminating normally")
+        exit(0)
 
     # we do NOT need to clear psdones, because they autoclear
     # when download mode is turned off.

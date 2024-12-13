@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # boot script is magic, it will always rename to boot.sh
-BOOTSCRIPT="boot_script/boot_dummy.sh"
+BOOTSCRIPT="boot_script/boot_teststartup.sh"
 
 # version script and file
 VERSCRIPT="./create_pueo_sqfs_version.py"
@@ -60,6 +60,9 @@ done
 # SURF build is special, it extracts stuff
 echo "Building the SURF contents from pueo-python."
 bash pueo-python/make_surf.sh ${WORKDIR}/pylib/
+
+# pysurfHskd is special because so much testing
+bash pysurfHskd/make_pysurfhskd.sh ${WORKDIR}
 
 for s in ${SCRIPTS} ; do
     cp $s ${WORKDIR}/bin/

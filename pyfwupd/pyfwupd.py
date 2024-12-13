@@ -16,6 +16,7 @@
 # it catches a signal.
 
 from pyzynqmp import Bitstream, PyZynqMP
+from signalhandler import SignalHandler
 from gpio import GPIO 
 import os
 import shutil
@@ -92,17 +93,6 @@ class Converter:
         self.xf.stdin.write(fr)
         return self.xf.stdout.read(49152)
 
-# signal handler, using self-pipe trick. need to replicate
-# this for main pysurfHskd
-class SignalHandler:
-    terminate = False
-    def __init__(self):
-        noop = lambda s,f : None
-        self.rfd, self.wfd = os.pipe2(os.O_NONBLOCK | os.O_CLOEXEC)
-        signal.signal(signal.SIGINT, noop)
-        signal.signal(signal.SIGTERM, noop)
-        signal.set_wakeup_fd(self.wfd)
-
 # this is supertrimmed for PUEO
 class Event:
     # ll = struct timespec, H=type, H=code, I=value
@@ -153,7 +143,13 @@ if __name__ == "__main__":
     image = Path(IMAGE_PATH)
     
     # okey dokey, starting up
-    handler = SignalHandler()
+
+    # create the selector
+    sel = selectors.DefaultSelector()
+
+    # and create the handler - by default it does SIGINT/SIGTERM
+    handler = SignalHandler(sel)
+    
     # we always write our length, it's constant
     lenPath.write_text(str(FRAMELEN))
     stateA = [30, gpioA, str(bankA), None]
@@ -178,27 +174,19 @@ if __name__ == "__main__":
     tempFile = open(TMPPATH, "w+b")    
     # spawn the converter
     conv = Converter()
-    # spawn the selector
-    sel = selectors.DefaultSelector()
 
     # dear god this is insane
     with open(EVENTPATH, "rb") as evf:
-        terminate = False
-        # create handler functions here
-        def set_terminate(fd):
-            global terminate
-            
-            logger.info("terminating while in state %d" % state[0])
-            terminate = True
-            
-        def handleEvent(fd):
+        
+        # maybe farm this off into a class
+        # create the event handler function
+        def handleEvent(f, m):
             # we modify state/curFile, need to mark it as a global
             global state
             global curFile
             global tempFile
             
-            # don't actually use fd
-            eb = evf.read(Event.LENGTH)
+            eb = f.read(Event.LENGTH)
             # info
             logger.debug("out of read wait, got %d bytes" % len(eb))
             logger.trace(list(eb))
@@ -251,7 +239,7 @@ if __name__ == "__main__":
                         except Exception as e:
                             horribleProblem = 2
                             logger.error("First frame failed: " + repr(e))
-                            terminate = True
+                            handler.set_terminate()
                             return
                         logger.info("beginning " + thisFn + " len " + str(thisLen))
                         curFile = [thisFn, thisLen]
@@ -270,7 +258,7 @@ if __name__ == "__main__":
                         except Exception as e:
                             horribleProblem = 3
                             logger.error("Finishing file failed: " + repr(e))
-                            terminate = True
+                            handler.set_terminate()
                             return
                         curFile = None
                     else:
@@ -279,7 +267,7 @@ if __name__ == "__main__":
                         except Exception as e:
                             horribleProblem = 4
                             logger.error("Writing to file failed: " + repr(e))
-                            terminate = True
+                            handler.set_terminate()
                             return
                         curFile[1] = curFile[1] - dlen
                         logger.detail("%s: %d bytes, %d remaining" % (curFile[0], dlen, curFile[1]))
@@ -292,7 +280,6 @@ if __name__ == "__main__":
             return        
         
         sel.register(evf, selectors.EVENT_READ, handleEvent)
-        sel.register(handler.rfd, selectors.EVENT_READ, set_terminate)
         # we can now mark things as ready. evf is already open,
         # so when we select below, even if something comes in while
         # we're setting it back to zero, we'll still see it.
@@ -301,11 +288,11 @@ if __name__ == "__main__":
         stateA[1].write(0)
         stateB[1].write(0)
         # do selecty thing here
-        while not terminate:
+        while not handler.terminate:
             events = sel.select()
             for key, mask in events:
                 callback = key.data
-                callback(key.fd)
+                callback(key.fileobj, mask)
 
     if curFile:
         logger.warning("file " + curFile[0] + " is incomplete, deleting temporary!!")

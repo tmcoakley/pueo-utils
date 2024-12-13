@@ -10,7 +10,7 @@ catch_term() {
 }
 
 # automatically program the FPGA, weee!
-python3 /usr/local/bin/autoprog.py pysoceeprom.PySOCEEPROM
+autoprog.py pysoceeprom.PySOCEEPROM
 
 # here's where pysurfHskd would run
 $PYSURFHSK &

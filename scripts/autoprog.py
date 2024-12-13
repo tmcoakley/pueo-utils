@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from pyzynqmp import PyZynqMP
 from pathlib import Path
 

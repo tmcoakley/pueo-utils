@@ -9,13 +9,18 @@ VERFILE="PUEO_SQFS_VERSION"
 
 # individual single-file python modules
 PYTHON_SINGLE_FILES="pysoceeprom/pysoceeprom.py \
-	        pyzynqmp/pyzynqmp.py"
+	        pyzynqmp/pyzynqmp.py \
+		signalhandler/signalhandler.py"
+
 # multi-file python modules wrapped in directories
 PYTHON_DIRS="pyrfdc/pyrfdc/ \
 	       s6clk/ "
 # scripts
 SCRIPTS="scripts/build_squashfs \
-         scripts/autoprog.py "
+         scripts/autoprog.py"
+
+# binaries
+BINARIES="bin/xilframe"
 
 # name of the autoexclude file
 SURFEXCLUDE="pueo_sqfs_surf.exclude"
@@ -58,6 +63,10 @@ bash pueo-python/make_surf.sh ${WORKDIR}/pylib/
 
 for s in ${SCRIPTS} ; do
     cp $s ${WORKDIR}/bin/
+done
+
+for b in ${BINARIES} ; do
+    cp $b ${WORKDIR}/bin/
 done
 
 # avoid gitignores and pycaches

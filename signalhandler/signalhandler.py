@@ -7,7 +7,7 @@ import os
 
 class SignalHandler:
     """ Quick & dirty signal handler using self-pipe trick & selectors """    
-    def __init__(self, sel, signals = [ signal.SIGTERM, signal.SIGINT ] ):
+    def __init__(self, sel, signals = [ signal.SIGTERM, signal.SIGINT, signal.SIGPIPE ] ):
         """
         sel : selector used for multiple I/O handling
         signals : list of sigs to set terminate on (default TERM/INT)

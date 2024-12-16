@@ -101,7 +101,9 @@ timer = HskTimer(sel, callback=runTickFifo, interval=1)
 # this new version takes the selector
 handler = SignalHandler(sel)
 # spawn up the hsk handler
-hsk = HskHandler(sel)
+hsk = HskHandler(sel,
+                 eeprom,
+                 logName=LOG_NAME)
 # and the surf startup handler
 startup = StartupHandler(LOG_NAME,
                          surf,

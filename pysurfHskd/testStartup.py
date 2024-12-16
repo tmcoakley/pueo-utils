@@ -132,9 +132,10 @@ timer.start()
 # with hsk.myID only if pkt[1] is hsk.myID
 
 def ePingPong(pkt):
-    pkt[1] = pkt[0]
-    pkt[0] = hsk.myID
-    hsk.sendPacket(pkt)
+    rpkt = bytearray(pkt)
+    rpkt[1] = rpkt[0]
+    rpkt[0] = hsk.myID
+    hsk.sendPacket(rpkt)
 
 def eStatistics(pkt):
     rpkt = bytearray(9)

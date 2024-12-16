@@ -42,6 +42,7 @@ class HskHandler:
                     return 1
                 return 0            
         else:
+            self.myID = None
             filter = None
 
         def makePacketHandler():

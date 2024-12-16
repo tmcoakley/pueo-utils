@@ -19,6 +19,7 @@ class HskHandler:
                  port='/dev/ttyPS1',
                  baud=500000):
         self.selector = sel
+        self.logger = logging.getLogger(logName)
         self.fifo = queue.Queue()
         self.port = Serial(port, baud)
         self.handler = None
@@ -67,7 +68,7 @@ class HskHandler:
             return
         pktno = os.read(fd, 1)
         pkt = self.fifo.get()
-        self.logger.info("Pkt " + str(int(pktno)) + ":" + pkt.hex(sep=' '))
+        self.logger.info("Pkt %d: %s", pktno[0], pkt.hex(sep=' '))
             
         
 # sigh, reworked. we use a pipe to signal that our fifo should

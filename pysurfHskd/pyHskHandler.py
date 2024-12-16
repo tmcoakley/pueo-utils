@@ -12,6 +12,9 @@ import selectors
 # thread inside ANOTHER class because of
 # handler difficulties.
 class HskHandler:
+    SOCID_BASE = 128
+    SLOT_BASE = 64
+    
     def __init__(self,
                  sel,
                  eeprom=None,
@@ -25,8 +28,19 @@ class HskHandler:
         self.handler = None
         self.transport = None
         if eeprom is not None:
-            # make a filter function here!!!
-            filter = None
+            # simple filter function for the super-early version
+            # no broadcasts, no slot-based ID
+            self.myID = eeprom.socid + self.SOCID_BASE
+            myID = self.myID
+            def filter(pkt):
+                pktLen = len(pkt)
+                if pktLen < 5 or pkt[3] != pktLen-5 or (sum(pkt[4:]) % 256):
+                    self.logger.info("Invalid packet: %s", pkt.hex(sep=' '))
+                    return 1
+                # packet is ok, now filter on my ID
+                if pkt[1] != myID:
+                    return 1
+                return 0            
         else:
             filter = None
 

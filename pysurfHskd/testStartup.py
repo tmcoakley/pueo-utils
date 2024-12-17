@@ -120,83 +120,20 @@ def runHandler(fd, mask):
 # double sigh    
 sel.register(startup.rfd, selectors.EVENT_READ, runHandler)
 
-
 # this is all pretty clean now
 timer.start()
-# here we would spec a callback normally.
-# let's do a Really Stupid One right now
 
-
-#######################
-# MOVE THIS SOMEWHERE #
-#######################
-# NOTE NOTE: we should also have hsk.slotID and respond
-# with hsk.myID only if pkt[1] is hsk.myID
-
-def ePingPong(pkt):
-    rpkt = bytearray(pkt)
-    rpkt[1] = rpkt[0]
-    rpkt[0] = hsk.myID
-    hsk.sendPacket(rpkt)
-
-def eStatistics(pkt):
-    rpkt = bytearray(9)
-    rpkt[0] = pkt[1]
-    rpkt[1] = hsk.myID
-    rpkt[2] = 15
-    rpkt[3] = 4
-    rpkt[4:8] = hsk.statistics()
-    rpkt[8] = 256-(sum(rpkt[4:8]) % 256)
-    hsk.sendPacket(pkt)
-    
-def eVolts(pkt):
-    rpkt = bytearray(17)
-    rpkt[0] = pkt[1]
-    rpkt[1] = hsk.myID
-    rpkt[2] = 17
-    rpkt[3] = 12
-    rpkt[4:16] = struct.pack(">IIIIII", *zynq.raw_volts())
-    rpkt[16] = 256-(sum(rpkt[4:16]) % 256)
-    hsk.sendPacket(pkt)
-
-def eTemps(pkt):
-    rpkt = bytearray(13)
-    rpkt[0] = pkt[1]
-    rpkt[1] = hsk.myID
-    rpkt[2] = 16
-    rpkt[3] = 8
-    rpkt[4:12] = struct.pack(">IIII", *zynq.raw_temps())
-    rpkt[12] = 256-(sum(rpkt[4:12]) % 256)
-    hsk.sendPacket(pkt)
-    
-hskMap = { 0 : ePingPong,
-           15 : eStatistics,
-           16 : eVolts,
-           17 : eTemps }
-    
-def basicHandler(fd, mask):
-    if hsk.fifo.empty():
-        logger.error("handler called but FIFO is empty?")
-        return
-    pktno = os.read(fd, 1)
-    pkt = hsk.fifo.get()
-    cmd = pkt[2]
-    if cmd in hskMap:
-        try:
-            cb = hskMap.get(cmd)
-            logger.debug("calling %s", str(cb))
-            cb(pkt)
-        except Exception as e:
-            import traceback
-            logger.error("exception %s thrown inside housekeeping handler?", repr(e))
-            logger.error(traceback.format_exc())
-            handler.set_terminate()
-    else:
-        logger.info("ignoring unknown hsk command: %2.2x", cmd)
-            
+processor = HskProcessor(hsk,
+                         zynq,
+                         eeprom,
+                         startup,
+                         LOG_NAME,
+                         handler.set_terminate)
+                         
+######################            
+hsk.start(callback=processor.basicHandler)
 ######################
-            
-hsk.start(callback=basicHandler)
+
 # need to call the startup handler once, but it can except
 try:
     startup.run()

@@ -27,26 +27,29 @@ class HskHandler:
         self.port = Serial(port, baud)
         self.handler = None
         self.transport = None
+        thisFilter = None
+        self.myID = None
         if eeprom is not None:
             # simple filter function for the super-early version
             # no broadcasts, no slot-based ID
             self.myID = eeprom.socid + self.SOCID_BASE
             myID = self.myID
-            def filter(pkt):
+            def packetFilter(pkt):
                 pktLen = len(pkt)
+                rv = 0
                 if pktLen < 5 or pkt[3] != pktLen-5 or (sum(pkt[4:]) % 256):
                     self.logger.info("Invalid packet: %s", pkt.hex(sep=' '))
-                    return 1
+                    rv = -1
                 # packet is ok, now filter on my ID
-                if pkt[1] != myID:
-                    return 1
-                return 0            
-        else:
-            self.myID = None
-            filter = None
+                elif pkt[1] != myID:
+                    rv = 1
+                else:
+                    rv = 0
+                return rv
+            thisFilter = packetFilter
 
         def makePacketHandler():
-            return HskPacketHandler(self.fifo, logName, filter)
+            return HskPacketHandler(self.fifo, logName, thisFilter)
         self.reader = ReaderThread(self.port, makePacketHandler)
         self.sendPacket = self.notRunningError
         self.statistics = self.notRunningError
@@ -95,18 +98,18 @@ class HskHandler:
 # filterFn returns 0 if no issues, 1 if it's filtered, and -1 if it's
 # an error (really anything other than 0 or 1)
 class HskPacketHandler(Packetizer):
-                 
+    _nullFilter = lambda pkt : 0             
     def __init__(self,
                  fifo,
                  logName='pysurfHskd',
-                 filterFn=None
+                 filterFn=_nullFilter
                  ):
         super(HskPacketHandler, self).__init__()
         self.rfd, self.wfd = os.pipe2(os.O_NONBLOCK | os.O_CLOEXEC)        
         self.fifo = fifo
+        self.filterFn = filterFn
         
         self.logger = logging.getLogger(logName)
-        self.filterFn = lambda pkt : 0 if not filterFn else filterFn
         self._statisticsLock = threading.Lock()
 
         self._receivedPackets = 0
@@ -121,11 +124,11 @@ class HskPacketHandler(Packetizer):
         self.logger.info("opened port")
 
     def connection_lost(self, exc):
-        if exc:
-            self.logger.error("closed port due to exception")
-            traceback.print_exc(exc)
-        else:
-            self.logger.info("closed port")
+        if isinstance(exc, Exception):
+            self.logger.info("port closed due to exception")
+            raise exc
+        self.logger.info("closed port")
+
 
     def handle_packet(self, packet):
         """ implement the handle_packet function """
@@ -137,11 +140,13 @@ class HskPacketHandler(Packetizer):
             with self._statisticsLock:
                 self._errorPackets = self._errorPackets + 1
                 errorPackets = self._errorPackets
-            errMsg = "COBS decode error #%d : %s" % (errorPackets, ' '.join(list(map(hex,packet))))
-            self.logger.error(errMsg)
+            self.logger.error("COBS decode error #%d : %s",
+                              errorPackets,
+                              packet.hex(sep=' '))
             return
         # COBS decode OK
         filterResult = self.filterFn(pkt)
+        self.logger.debug("got packet: filter result %d", filterResult)
         if filterResult == 0:
             if not self.fifo.full():
                 with self._statisticsLock:
@@ -166,8 +171,7 @@ class HskPacketHandler(Packetizer):
             with self._statisticsLock:
                 self._errorPackets = self._errorPackets + 1
                 errorPackets = self._errorPackets
-            errMsg = "Filter error #%d : %s" % (errorPackets, ' '.join(list(map(hex,))))
-            self.logger.error(errMsg)
+            self.logger.error("Filter error #%d : %d", errorPackets, filterResult)
 
     def send_packet(self, packet):
         """ send binary packet via COBS encoding """

@@ -1,4 +1,5 @@
 import os
+import uuid
 import struct
 import shutil
 from pathlib import Path
@@ -57,8 +58,8 @@ class Bitstream:
 #
 # Because everything is filesystem-based, we can define a version
 # that runs on the RFSoC and a version that will run on a simulator.
-
-
+#
+# also has silliness like the MAC address
 class PyZynqMPBase:
     STATE_OPERATING='operating'
     idcode_map = { 0x147E5093 : "xczu25dr",
@@ -76,7 +77,8 @@ class PyZynqMP:
     
     # LIBFIRMWARE
     CURRENT=LIBFIRMWARE_PATH + "current"    
-
+    NEXT=LIBFIRMWARE_PATH + "next"
+    
     # FPGAMGR
     STATE_PATH=FPGAMGR_PATH+"state"
     FLAGS_PATH=FPGAMGR_PATH+"flags"
@@ -151,6 +153,8 @@ class PyZynqMP:
         self.dna = ('%8.8x' % dnaVals[2])
         self.dna += ('%8.8x' % dnaVals[1])
         self.dna += ('%8.8x' % dnaVals[0])
+        # macaddr
+        self.mac = format(uuid.getnode(),'06x')
 
     def state(self):
         return Path(self.STATE_PATH).read_text()[:-1]

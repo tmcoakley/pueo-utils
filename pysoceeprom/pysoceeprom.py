@@ -7,6 +7,11 @@
 #                           LOAD_xxx#_xxx#_xxx# (bitstream load order)
 # page 5 (BCCOUNT)     says BCNT_####_####_#### (wait for this many packets in broadcast)
 
+import os
+
+pysoceeprom_cache = os.getenv('PYSOCEEPROM_CACHE')
+pysoceeprom_cache = "/tmp/pueo/eeprom" if pysoceeprom_cache is None else pysoceeprom_cache
+
 # this is in a try/except block for testing-y stuff 
 try:
     from smbus2 import SMBus
@@ -57,7 +62,7 @@ class PySOCEEPROM:
                  bus=1,
                  dev=0x50,
                  mode=None,
-                 cacheFn='/tmp/pueo/eeprom'):        
+                 cacheFn=pysoceeprom_cache):        
         # store the overall characteristics
         self.dev = dev
         self.bus = bus

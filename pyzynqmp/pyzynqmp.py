@@ -3,6 +3,15 @@ import struct
 import shutil
 from pathlib import Path
 
+# PYZYNQMP_FAKE defines a prefix for use in a simulator
+# see the paths under ROOT_PATHS
+# probably will create a helper script for this
+
+fake = os.getenv('PYZYNQMP_FAKE')
+pfx = ""
+if fake is not None:
+    pfx = fake
+    
 # parses header for bitstream
 class Bitstream:
     HEADER=b'\x00\t\x0f\xf0\x0f\xf0\x0f\xf0\x0f\xf0\x00\x00\x01'
@@ -45,29 +54,38 @@ class Bitstream:
 #
 # this replaces a ton of fpgautil, but that's okay because
 # fpgautil is braindead
-class PyZynqMP:
-    NVMEM_PATH="/sys/bus/nvmem/devices/zynqmp-nvmem0/nvmem"
-    FPGAMGR_PATH="/sys/class/fpga_manager/fpga0/"
-    LIBFIRMWARE_PATH="/lib/firmware/"
-    CURRENT=LIBFIRMWARE_PATH + "current"
-    MODPARAM_PATH="/sys/module/zynqmp_fpga/parameters/"
-    DEBUG_PATH="/sys/kernel/debug/"
-    STATE_PATH=FPGAMGR_PATH+"state"
-    FLAGS_PATH=FPGAMGR_PATH+"flags"
-    FIRMWARE_PATH=FPGAMGR_PATH+"firmware"
+#
+# Because everything is filesystem-based, we can define a version
+# that runs on the RFSoC and a version that will run on a simulator.
+
+
+class PyZynqMPBase:
     STATE_OPERATING='operating'
-    # defines
     idcode_map = { 0x147E5093 : "xczu25dr",
                    0x147FF093 : "xczu47dr" }
     
+class PyZynqMP:
+    # ROOT PATHS
+    NVMEM_PATH=pfx+"/sys/bus/nvmem/devices/zynqmp-nvmem0/nvmem"
+    FPGAMGR_PATH=pfx+"/sys/class/fpga_manager/fpga0/"
+    LIBFIRMWARE_PATH=pfx+"/lib/firmware/"
+    MODPARAM_PATH=pfx+"/sys/module/zynqmp_fpga/parameters/"
+    DEBUG_PATH=pfx+"/sys/kernel/debug/"
+    IIO_PATH=pfx+"/sys/bus/iio/devices/"
+    GGS_PATH=pfx+"/sys/devices/platform/firmware:zynqmp-firmware/"
+    
+    # LIBFIRMWARE
+    CURRENT=LIBFIRMWARE_PATH + "current"    
+
+    # FPGAMGR
+    STATE_PATH=FPGAMGR_PATH+"state"
+    FLAGS_PATH=FPGAMGR_PATH+"flags"
+    FIRMWARE_PATH=FPGAMGR_PATH+"firmware"    
+    
     # IIO
-    IIO_PATH="/sys/bus/iio/devices/"
     IIO_DEVICE="iio:device0/"
     IIO_DEVICE_PATH=IIO_PATH+IIO_DEVICE
 
-    # GGS/PGGS
-    GGS_PATH="/sys/devices/platform/firmware:zynqmp-firmware/"
-    
     # PM (chipid)
     PM_PATH=DEBUG_PATH+"zynqmp-firmware/pm"
     PM_CHIPID="pm_get_chipid\n"

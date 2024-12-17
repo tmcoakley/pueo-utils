@@ -96,17 +96,13 @@ class HskProcessor:
             rpkt += [cks]
             self.hsk.sendPacket(rpkt)
             
-            
-
-            
-            
-    
     hskMap = { 0 : ePingPong,
                15 : eStatistics,
                16 : eVolts,
                17 : eTemps,
                18 : eIdentify,
-               32 : eStartState
+               32 : eStartState,
+               129 : eFwNext
               }
 
     # this guy is like practically the whole damn program
@@ -123,6 +119,7 @@ class HskProcessor:
         self.startup = startup
         self.logger = logging.getLogger(logName)
         self.terminate = terminateFn
+        self.pyfwupd = None
         
     def basicHandler(self, fd, mask):
         if self.hsk.fifo.empty():

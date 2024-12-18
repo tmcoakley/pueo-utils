@@ -60,11 +60,6 @@ class Bitstream:
 # that runs on the RFSoC and a version that will run on a simulator.
 #
 # also has silliness like the MAC address
-class PyZynqMPBase:
-    STATE_OPERATING='operating'
-    idcode_map = { 0x147E5093 : "xczu25dr",
-                   0x147FF093 : "xczu47dr" }
-    
 class PyZynqMP:
     # ROOT PATHS
     NVMEM_PATH=pfx+"/sys/bus/nvmem/devices/zynqmp-nvmem0/nvmem"
@@ -92,6 +87,11 @@ class PyZynqMP:
     PM_PATH=DEBUG_PATH+"zynqmp-firmware/pm"
     PM_CHIPID="pm_get_chipid\n"
 
+    # constants
+    STATE_OPERATING='operating'
+    idcode_map = { 0x147E5093 : "xczu25dr",
+                   0x147FF093 : "xczu47dr" }
+    
     # these are in progress
     READBACK_TYPE_PATH=MODPARAM_PATH+"readback_type"
     READBACK_LEN_PATH=MODPARAM_PATH+"readback_len"

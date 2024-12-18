@@ -17,7 +17,8 @@ PYTHON_DIRS="pyrfdc/pyrfdc/ \
 	       s6clk/ "
 # scripts
 SCRIPTS="scripts/build_squashfs \
-         scripts/autoprog.py"
+         scripts/autoprog.py \
+	 scripts/pyfwupd.py"
 
 # binaries
 BINARIES="bin/xilframe"
@@ -62,6 +63,7 @@ echo "Building the SURF contents from pueo-python."
 bash pueo-python/make_surf.sh ${WORKDIR}/pylib/
 
 # pysurfHskd is special because so much testing
+echo "Building pysurfHskd"
 bash pysurfHskd/make_pysurfhskd.sh ${WORKDIR}
 
 for s in ${SCRIPTS} ; do

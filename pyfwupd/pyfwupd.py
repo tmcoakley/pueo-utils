@@ -30,7 +30,11 @@ from subprocess import Popen, PIPE
 from pathlib import Path
 
 LOG_NAME = 'pyfwupd'
-LOG_LEVEL = logging.WARNING
+LOG_LEVEL_OVERRIDE = "/tmp/pyfwupd.loglevel"
+if os.path.isfile(LOG_LEVEL_OVERRIDE):
+    LOG_LEVEL = int(Path(LOG_LEVEL_OVERRIDE).read_text())
+else:
+    LOG_LEVEL = logging.WARNING
 
 PYFW=b'PYFW'
 CURRENT=PyZynqMP.CURRENT

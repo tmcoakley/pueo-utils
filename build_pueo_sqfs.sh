@@ -18,10 +18,10 @@ PYTHON_DIRS="pyrfdc/pyrfdc/ \
 # scripts
 SCRIPTS="scripts/build_squashfs \
          scripts/autoprog.py \
-	 scripts/pyfwupd.py"
+	 pyfwupd/pyfwupd.py"
 
 # binaries
-BINARIES="bin/xilframe"
+BINARIES="binaries/xilframe"
 
 # name of the autoexclude file
 SURFEXCLUDE="pueo_sqfs_surf.exclude"

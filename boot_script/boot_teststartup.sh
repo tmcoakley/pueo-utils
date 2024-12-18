@@ -1,9 +1,13 @@
 #!/bin/bash
 
+# reload systemd to pick up our service files
+systemctl daemon-reload
+
 PYSURFHSKDIR="/usr/local/pysurfHskd"
 PYSURFHSKD_NAME="testStartup.py"
 PYSURFHSKD=${PYSURFHSKDIR}/${PYSURFHSKD_NAME}
 
+# we do need to tack on a subdir
 export PYTHONPATH=$PYTHONPATH:$PYSURFHSKDIR
 
 # dead duplicate of what's in pueo-squashfs

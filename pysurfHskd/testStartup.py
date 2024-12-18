@@ -10,8 +10,7 @@ from pueoTimer import HskTimer
 from signalhandler import SignalHandler
 from pyHskHandler import HskHandler
 from surfStartupHandler import StartupHandler
-from serial.threaded import ReaderThread
-from serial import Serial
+from HskProcessor import HskProcessor
 
 from pysoceeprom import PySOCEEPROM
 from pyzynqmp import PyZynqMP

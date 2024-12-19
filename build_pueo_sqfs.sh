@@ -50,7 +50,10 @@ for f in `find python_squashfs -type f` ; do
     DIR=`basename $FULLDIR`
     echo ${DIR}/${FN} >> ${WORKDIR}/share/${SURFEXCLUDE}
 done
-    
+# if build_squashfs is used there is no version!
+# build_squashfs generates test software!
+echo "share/version.pkl" >> ${WORKDIR}/share/${SURFEXCLUDE}
+
 for f in ${PYTHON_SINGLE_FILES} ; do
     cp $f ${WORKDIR}/pylib/
 done

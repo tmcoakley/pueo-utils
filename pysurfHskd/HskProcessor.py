@@ -259,7 +259,7 @@ class HskProcessor:
                  logName,
                  terminateFn,
                  softNextFile="/tmp/pueo/next",
-                 plxVersionFile=None
+                 plxVersionFile=None,
                  versionFile=None):
         self.hsk = hsk
         self.zynq = zynq

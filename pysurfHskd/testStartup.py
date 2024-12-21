@@ -163,3 +163,35 @@ while not handler.terminate:
 logger.info("Terminating!")
 timer.cancel()
 hsk.stop()
+processor.stop()
+
+# ok, this changed with plx 0.3.0's pueo-squashfs:
+# there's only one termination option we can do (0x7E) - terminate no unmount
+# plus we have 0x7F (reboot)
+# we then have 5 restart combinations with pueo-squashfs
+# 0: normal exit and restart (load next software, keep local changes)
+# 1: hot restart (do not load next software, keep local changes)
+# 2: normal exit, revert and restart (load next software, abandon local changes)
+# 3: hot revert and restart (do not load next software, abandon local changes)
+# 4: clean up and restart (restart from QSPI)
+#
+# this is implemented with 3 bitmasks and 2 magic numbers
+# we have an additional bitmask which is for Our Eyes Only
+
+# 0x01: bmKeepCurrentSoft
+# 0x02: bmRevertChanges
+# 0x04: bmCleanup
+# 0x08: bmForceReprogram
+# 0xFE: kTerminate
+# 0xFF: kReboot
+# note that eRestart checks if bit 7 is set: if it is,
+# and the value is not one of kTerminate or kReboot, it is IGNORED.
+if processor.restartCode:
+    code = processor.restartCode
+    if code & processor.bmMagicValue:
+        code = code ^ processor.bmMagicValue        
+    elif code & processor.bmForceReprogram:
+        os.unlink(zynq.CURRENT)
+        code = code ^ processor.bmForceReprogram
+    exit(code)
+exit(0)

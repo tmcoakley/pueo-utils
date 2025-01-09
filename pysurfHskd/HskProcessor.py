@@ -237,19 +237,6 @@ class HskProcessor:
         self.restartCode = code
         self.terminate()        
         
-    hskMap = { 0 : ePingPong,
-               15 : eStatistics,
-               16 : eVolts,
-               17 : eTemps,
-               18 : eIdentify,
-               32 : eStartState,
-               129 : eFwNext,
-               135 : eSoftNext,
-               189 : eJournal,
-               190 : eDownloadMode,
-               191 : eRestart
-              }
-
     # this guy is like practically the whole damn program
     def __init__(self,
                  hsk,
@@ -261,6 +248,21 @@ class HskProcessor:
                  softNextFile="/tmp/pueo/next",
                  plxVersionFile=None,
                  versionFile=None):
+        # these need to be actively defined to make them
+        # closures - they're methods, not constant functions
+        self.hskMap = {
+            0 : self.ePingPong,
+            15 : self.eStatistics,
+            16 : self.eVolts,
+            17 : self.eTemps,
+            18 : self.eIdentify,
+            32 : self.eStartState,
+            129 : self.eFwNext,
+            135 : self.eSoftNext,
+            189 : self.eJournal,
+            190 : self.eDownloadMode,
+            191 : self.eRestart
+        }        
         self.hsk = hsk
         self.zynq = zynq
         self.eeprom = eeprom

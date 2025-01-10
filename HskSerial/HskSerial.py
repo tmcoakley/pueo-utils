@@ -10,9 +10,31 @@ from cobs import cobs
 # - list of integers under 256
 # - anything else castable to bytes via bytes()
 class HskPacket:
+    cmds = {
+        "ePingPong" : 0x00,
+        "eStatistics" : 0x0F,
+        "eTemps" : 0x10,
+        "eVolts" : 0x11,
+        "eIdentify" : 0x12,
+        "eStartState" : 0x20,
+        "eFwParams" : 0x80,
+        "eFwNext" : 0x81,
+        "ePROMStartup" : 0x82,
+        "ePROMBitLoadOrder" : 0x83,
+        "ePROMSoftLoadOrder" : 0x84,
+        "ePROMOrientation" : 0x85,
+        "eLoadSoft" : 0x86,
+        "eSoftNext" : 0x87,
+        "eSoftNextReboot" : 0x88,
+        "eJournal" : 0xBD,
+        "eDownloadMode" : 0xBE,
+        "eRestart" : 0xBF }
+
+    strings = dict(zip(cmds.values(),cmds.keys()))
+
     def __init__(self,
                  dest,
-                 ptype,
+                 cmd,
                  data=None,
                  src=0x00):
         if data is None:
@@ -23,13 +45,29 @@ class HskPacket:
             self.data = bytes(data)
         self.dest = dest
         self.src = src
-        self.type = ptype
+        self.cmd = cmd
 
+    def __str__(self):
+        return "HskPacket."+self.pretty()
+        
+    def pretty(self, asString=False):
+        if self.cmd in self.strings:
+            cstr = self.strings[self.cmd]
+        else:
+            cstr = "UNKNOWN(%2.2x)" % self.cmd
+        myStr = cstr + " from " + "%2.2x" % self.src + " to " + "%2.2x" % self.dest
+        if len(self.data):
+            if asString:
+                myStr += ": " + self.data.decode()
+            else:
+                myStr += ": " + self.data.hex(sep=' ')
+        return myStr
+        
     def encode(self):
         pkt = bytearray(4)
         pkt[0] = self.src
         pkt[1] = self.dest
-        pkt[2] = self.type
+        pkt[2] = self.cmd
         pkt[3] = len(self.data)
         pkt += self.data
         pkt.append((256-(sum(pkt[4:]))) & 0xFF)

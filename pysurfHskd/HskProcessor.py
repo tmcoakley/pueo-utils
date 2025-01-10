@@ -35,7 +35,7 @@ class HskProcessor:
         rpkt[0] = self.hsk.myID
         rpkt[2] = 17
         rpkt[3] = 12
-        rpkt[4:16] = struct.pack(">IIIIII", *zynq.raw_volts())
+        rpkt[4:16] = struct.pack(">IIIIII", *self.zynq.raw_volts())
         rpkt[16] = (256-sum(rpkt[4:16])) & 0xFF
         self.hsk.sendPacket(rpkt)
 
@@ -45,7 +45,7 @@ class HskProcessor:
         rpkt[0] = self.hsk.myID
         rpkt[2] = 16
         rpkt[3] = 8
-        rpkt[4:12] = struct.pack(">IIII", *zynq.raw_temps())
+        rpkt[4:12] = struct.pack(">IIII", *self.zynq.raw_temps())
         rpkt[12] = (256-sum(rpkt[4:12])) & 0xFF
         self.hsk.sendPacket(rpkt)
 
@@ -254,8 +254,8 @@ class HskProcessor:
         self.hskMap = {
             0 : self.ePingPong,
             15 : self.eStatistics,
-            16 : self.eVolts,
-            17 : self.eTemps,
+            16 : self.eTemps,
+            17 : self.eVolts,
             18 : self.eIdentify,
             32 : self.eStartState,
             129 : self.eFwNext,

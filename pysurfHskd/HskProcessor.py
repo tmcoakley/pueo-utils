@@ -3,6 +3,7 @@ import os
 from subprocess import Popen, PIPE, TimeoutExpired
 from pathlib import Path
 import pickle
+import struct
 
 class HskProcessor:
     kReboot = 0xFF

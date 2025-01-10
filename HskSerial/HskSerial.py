@@ -1,8 +1,7 @@
 from serial import Serial
 from cobs import cobs
 
-# allows silliness like
-# sendHskCmd(dev, HskPacket(0x80, 0x00)) as well as fully-filling it
+# dev.send(HskPacket(0x80, 0x00)) as well as fully-filling it
 # from a response.
 # data can be
 # - bytearray
@@ -32,7 +31,7 @@ class HskPacket:
         pkt[1] = self.dest
         pkt[2] = self.type
         pkt[3] = len(self.data)
-        pkt += data
+        pkt += self.data
         pkt.append((256-(sum(pkt[4:]))) & 0xFF)
         return cobs.encode(pkt)
         

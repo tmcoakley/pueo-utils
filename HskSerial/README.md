@@ -62,7 +62,7 @@ pkt = hsk.receive()
 print(pkt.pretty())
 print(pkt.pretty(asString=True))
 ids = list(map(bytes.decode, pkt.data.split(b'\x00')))
-print("DNA:", ids[0], "MAC:", ids[1], "PetaLinux:", ids[2])
+print("DNA:", ids[0], "MAC:", ids[1], "PetaLinux:", ids[2] if lens(ids[2]) else "None")
 if len(ids) == 6 or len(ids) == 7:
    print("pueo.sqfs version:", ids[3])
    print("pueo.sqfs hash:", ids[4])
@@ -74,7 +74,7 @@ gives
 ```
 eIdentify from 80 to 00: 34 30 30 30 30 30 30 30 30 31 36 39 63 30 32 36 32 64 32 31 32 30 38 35 00 64 38 34 37 38 66 39 36 30 63 30 61 00
 eIdentify from 80 to 00: 400000000169c0262d212085d8478f960c0a
-DNA: 400000000169c0262d212085  MAC: d8478f960c0a PetaLinux:
+DNA: 400000000169c0262d212085  MAC: d8478f960c0a PetaLinux: None
 ```
 Note that pretty-printing the packet here ignores the string terminator
 (``b'\x00'``) that splits it into elements. The additional processing

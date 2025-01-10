@@ -46,7 +46,7 @@ class HskPacket:
         self.dest = dest
         self.src = src
         if isinstance(cmd, str):
-            if str in self.cmds:
+            if cmd in self.cmds:
                 self.cmd = self.cmds[cmd]
             else:
                 raise ValueError("%s not in cmds table" % cmd)

@@ -60,7 +60,7 @@ class HskSerial(Serial):
         # checky checky
         if len(rx) < 5:
             raise IOError("received data only %d bytes" % len(rx))
-        if sum(rx[4:] & 0xFF):
+        if sum(rx[4:]) & 0xFF:
             raise IOError("checksum failure: " + rx.hex(sep=' '))
         return HskPacket(rx[1],
                          rx[2],

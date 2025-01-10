@@ -317,7 +317,7 @@ class HskProcessor:
         if cmd in self.hskMap:
             try:
                 cb = self.hskMap.get(cmd)
-                self.logger.debug("calling %s", str(cb))
+                self.logger.debug("calling %s", cb.__name__)
                 cb(pkt)
             except Exception as e:
                 import traceback

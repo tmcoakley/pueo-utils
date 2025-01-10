@@ -127,7 +127,9 @@ processor = HskProcessor(hsk,
                          eeprom,
                          startup,
                          LOG_NAME,
-                         handler.set_terminate)
+                         handler.set_terminate,
+                         plxVersionFile="/etc/petalinux/version",
+                         versionFile="/usr/local/share/version.pkl")
                          
 ######################            
 hsk.start(callback=processor.basicHandler)

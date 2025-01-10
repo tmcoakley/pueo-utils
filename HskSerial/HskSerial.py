@@ -45,7 +45,13 @@ class HskPacket:
             self.data = bytes(data)
         self.dest = dest
         self.src = src
-        self.cmd = cmd
+        if isinstance(self.cmd, str):
+            if str in self.cmds:
+                self.cmd = self.cmds[cmd]
+            else:
+                raise ValueError("%s not in cmds table" % cmd)
+        else:
+            self.cmd = cmd
 
     def __str__(self):
         return "HskPacket."+self.pretty()

@@ -45,7 +45,7 @@ class HskPacket:
             self.data = bytes(data)
         self.dest = dest
         self.src = src
-        if isinstance(self.cmd, str):
+        if isinstance(cmd, str):
             if str in self.cmds:
                 self.cmd = self.cmds[cmd]
             else:

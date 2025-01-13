@@ -1,7 +1,10 @@
 #!/bin/bash
 
-# reload systemd to pick up our service files
+# reload systemd to pick up pyfwupd
 systemctl daemon-reload
+
+# list of services to check to stop
+CHECK_SERVICES="pyfwupd"
 
 PYSURFHSKDIR="/usr/local/pysurfHskd"
 PYSURFHSKD_NAME="testStartup.py"
@@ -19,11 +22,20 @@ catch_term() {
 # automatically program the FPGA, weee!
 autoprog.py pysoceeprom.PySOCEEPROM
 
+trap catch_term SIGTERM
+
 # here's where pysurfHskd would run
 $PYSURFHSKD &
 waitjob=$!
 
 wait $waitjob
 RETVAL=$?
+
+# we need to make sure all services stop
+# to allow the unmount to proceed
+for service in ${CHECK_SERVICES}
+do
+    systemctl stop $service
+done
 
 exit $RETVAL

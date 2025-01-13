@@ -63,6 +63,9 @@ if eeprom.socid is None:
     logger.error("cannot start up without an SOCID!")
     exit(1)
 
+logger.info("starting up with unique ID 0x%2.2x" % eeprom.socid)
+
+    
 zynq = PyZynqMP()
     
 surf = PueoSURF(WBSPI.find_device('osu,surf6revB'),'SPI')

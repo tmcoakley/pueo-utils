@@ -40,13 +40,13 @@ class HskProcessor:
         self.hsk.sendPacket(rpkt)
 
     def eTemps(self, pkt):
-        rpkt = bytearray(13)
+        rpkt = bytearray(9)
         rpkt[1] = pkt[0]
         rpkt[0] = self.hsk.myID
         rpkt[2] = 16
-        rpkt[3] = 8
-        rpkt[4:12] = struct.pack(">HHHH", *self.zynq.raw_temps())
-        rpkt[12] = (256-sum(rpkt[4:12])) & 0xFF
+        rpkt[3] = 4
+        rpkt[4:8] = struct.pack(">HH", *self.zynq.raw_temps())
+        rpkt[8] = (256-sum(rpkt[4:8])) & 0xFF
         self.hsk.sendPacket(rpkt)
 
     # identify sends

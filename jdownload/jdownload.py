@@ -2,15 +2,16 @@
 
 # you need pysct for this
 # https://github.com/raczben/pysct
-#
+# you also need progressbar2 because I said so
 
 from pysct.core import Xsct
+import progressbar2
 import socket
 import sys
 import argparse
 import os
 from tempfile import NamedTemporaryFile
-
+from math import ceil
 
 JDLD_VERSION = b'V 1.0'
 JDLD_OK = b'K'
@@ -126,6 +127,8 @@ host = 'localhost'
 if not os.path.exists(args.localFile):
     print("%s: can't find %s to send" % (prog, args.localFile))
 
+# get its file size
+lfilesz = os.path.getsize(args.localFile)    
 lfile = os.open(args.localFile, os.O_RDONLY)
 
 # connect to the xsct/xsdb server
@@ -214,9 +217,19 @@ try:
     chunkCount = 0
     # Up the timeout, since it takes ~13 seconds per chunk
     xsct._socket.settimeout(30)
+    # PRETTY PRETTY
+    widgets = widgets = [ args.remoteFile  + ":",
+                          ' ', progressbar2.Percentage(),
+                          ' ', progressbar2.GranularBar(),
+                          ' ', progressbar2.AdaptiveETA(),
+                          ' ', progressbar2.AdaptiveTransferSpeed() ]
+    bar = progressbar2.ProgressBar( widgets=widgets,
+                                    max_value=lfilesz,
+                                    redirect_stdout=True).start()                          
     while True:
         if v > 0:
             print("starting chunk %d..." % chunkCount, end='')
+        bar.update(chunkCount*JDLD_CHUNK_SIZE)
         chunk = os.read(lfile, JDLD_CHUNK_SIZE)
         chunkLen = len(chunk)
         if chunkLen > 0:
@@ -251,6 +264,7 @@ try:
             break
         else:
             tf.seek(0)
+    bar.finish()
     print("%s: Download successful after %d chunks" % (prog, chunkCount))
     sock.sendall(endfile)
     # clear out the prompt

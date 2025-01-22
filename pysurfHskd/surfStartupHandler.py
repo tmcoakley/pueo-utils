@@ -78,7 +78,7 @@ class StartupHandler:
         elif self.state == self.StartupState.STARTUP_BEGIN:
             id = self.surf.read(0).to_bytes(4,'big')
             if id != b'SURF':
-                self.logger.error("failed identifying SURF:", id)
+                self.logger.error("failed identifying SURF: %s", id.hex())
                 self.state == self.StartupState.STARTUP_FAILURE
                 self._runNextTick()
                 return

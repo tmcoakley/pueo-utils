@@ -17,5 +17,5 @@ DEST=$1
 WORKDIR=$(mktemp -d)
 
 cp -R python_squashfs/* ${WORKDIR}
-mksquashfs ${WORKDIR} $1
+mksquashfs ${WORKDIR} $1 -noappend
 rm -rf ${WORKDIR}

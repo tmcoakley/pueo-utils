@@ -78,15 +78,19 @@ bridge = b'jb'
 finish = b'\x04'
 
 # what-freaking-ever
-modes = [ 'pynq', 'surf' ]
+modes = [ 'pynq', 'surf', 'turf' ]
 promptDict = { 'pynq' : b'xilinx@pynq:~$ ',
-           'surf' : b'root@SURFv6:~# ' }
+               'surf' : b'root@SURFv6:~# ',
+               'turf' : b'root@TURFv6:~# '}
 beginPromptDict = { 'pynq' : b'\x1b[?2004h',
-                'surf' : b'' }
+                    'surf' : b'',
+                    'turf' : b'' }
 endcmdDict = { 'pynq' : b'\x1b[?2004l\r',
-               'surf' : b'' }
+               'surf' : b'',
+               'turf' : b'' }
 newlineDict = { 'pynq' : b'\r\n',
-            'surf' : b'\r\n' }
+                'surf' : b'\r\n',
+                'turf' : b'\r\n' }
 
 parser = argparse.ArgumentParser(prog=prog)
 parser.add_argument("localFile", help="local filename to transfer")

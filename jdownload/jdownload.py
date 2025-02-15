@@ -3,9 +3,11 @@
 # you need pysct for this
 # https://github.com/raczben/pysct
 # you also need progressbar2 because I said so
-
+# - OK you need SOME form of progressbar
+#   I don't know if I'm using any progressbar2
+#   -exclusive features. Deal with it.
 from pysct.core import Xsct
-import progressbar2
+import progressbar
 import socket
 import sys
 import argparse
@@ -223,13 +225,13 @@ try:
     xsct._socket.settimeout(30)
     # PRETTY PRETTY
     widgets = widgets = [ args.remoteFile  + ":",
-                          ' ', progressbar2.Percentage(),
-                          ' ', progressbar2.GranularBar(),
-                          ' ', progressbar2.AdaptiveETA(),
-                          ' ', progressbar2.AdaptiveTransferSpeed() ]
-    bar = progressbar2.ProgressBar( widgets=widgets,
-                                    max_value=lfilesz,
-                                    redirect_stdout=True).start()                          
+                          ' ', progressbar.Percentage(),
+                          ' ', progressbar.GranularBar(),
+                          ' ', progressbar.AdaptiveETA(),
+                          ' ', progressbar.AdaptiveTransferSpeed() ]
+    bar = progressbar.ProgressBar( widgets=widgets,
+                                   max_value=lfilesz,
+                                   redirect_stdout=True).start()                          
     while True:
         if v > 0:
             print("starting chunk %d..." % chunkCount, end='')

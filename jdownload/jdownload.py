@@ -12,8 +12,17 @@ import socket
 import sys
 import argparse
 import os
+from sys import platform
 from tempfile import NamedTemporaryFile
 from math import ceil
+
+translate_path = lambda x : x
+# cygwin needs the pycygwin module for cygpath
+# to translate tmpfile paths. also we need forward-slashes not backslash
+# backslashes get translated
+if platform == 'cygwin':
+    from cygwin import cygpath
+    translate_path = lambda x : cygpath(x, mode='windows').replace("\\","/")
 
 JDLD_VERSION = b'V 1.0'
 JDLD_OK = b'K'
@@ -214,7 +223,7 @@ try:
     ln = getLine(sock)
     if ln[:-2] != JDLD_OK:
         print("%s: jdld did not respond OK to file create (%s)" % (prog, ln[:-2]))
-        print("%s: maybe a previous transfer is borked - open terminal, run jc, then send D0" % prog)
+        print("%s: maybe a previous transfer is borked - open terminal, run jc, then send \"D 0\"" % prog)
         sock.sendall(endfile)
         sock.close()
         startStopUart(xsct, False)
@@ -241,7 +250,8 @@ try:
         if chunkLen > 0:
             tf.write(chunk)
             tf.flush()
-            xsctCmd = 'dow -data %s %s; set done "done"' % (tf.name, JDLD_MAILBOX)
+            fn = translate_path(tf.name)
+            xsctCmd = 'dow -data %s %s; set done "done"' % (fn, JDLD_MAILBOX)
             resp = xsct.do(xsctCmd)
             if resp != 'done':
                 print("%s: got response %s ????" % (prog, resp))

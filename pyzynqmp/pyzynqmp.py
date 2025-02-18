@@ -26,9 +26,18 @@ class Bitstream:
             dl, = struct.unpack(">H", keydlen[1:3])
             designStr = f.read(dl)[:-1].decode()
             designFields = designStr.split(";")
-            self.design = designFields[0]
-            self.userid = int(designFields[1].split("=")[1],16)
-            self.toolVersion = designFields[2].split("=")[1]
+            # properly do this in case there are other fields
+            self.design = None
+            self.userid = None
+            self.toolVersion = None
+            for field in designFields:
+                kv = field.split("=")
+                if len(kv) == 1:
+                    self.design = kv[0]
+                elif kv[0] == "UserID":
+                    self.userid = int(kv[1], 16)
+                elif kv[0] == "Version":
+                    self.toolVersion = kv[1]
             keylen = f.read(3)
             dvl, = struct.unpack(">H", keylen[1:3])
             self.device = f.read(dvl)[:-1].decode()

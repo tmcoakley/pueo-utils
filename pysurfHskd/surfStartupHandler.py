@@ -85,6 +85,10 @@ class StartupHandler:
             else:
                 dv = self.surf.DateVersion(self.surf.read(0x4))
                 self.logger.info("this is SURF %s", str(dv))
+                # cool you're a surf turn on an LED or some'n
+                r = bf(self.surf.read(0xC))
+                r[1] = 1
+                self.surf.write(0xC, int(r))
                 self.state = self.StartupState.WAIT_CLOCK
                 self._runImmediate()
                 return

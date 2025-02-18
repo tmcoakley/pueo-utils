@@ -69,6 +69,9 @@ class PyZynqMP:
     DEBUG_PATH=pfx+"/sys/kernel/debug/"
     IIO_PATH=pfx+"/sys/bus/iio/devices/"
     GGS_PATH=pfx+"/sys/devices/platform/firmware:zynqmp-firmware/"
+
+    OVERLAY=pfx+"/configfs/device-tree/overlays/full/"
+    OVERLAYPATH = OVERLAY + "path"
     
     # LIBFIRMWARE
     CURRENT=LIBFIRMWARE_PATH + "current"    
@@ -90,7 +93,8 @@ class PyZynqMP:
     # constants
     STATE_OPERATING='operating'
     idcode_map = { 0x147E5093 : "xczu25dr",
-                   0x147FF093 : "xczu47dr" }
+                   0x147FF093 : "xczu47dr",
+                   0x14758093 : "xczu19eg"}
     
     # these are in progress
     READBACK_TYPE_PATH=MODPARAM_PATH+"readback_type"
@@ -166,31 +170,60 @@ class PyZynqMP:
     def load(self, filename):
         if not os.path.isfile(filename):
             raise FileNotFoundError("%s does not exist" % filename)
+        # check if it's a DTBO, not a bitstream:
+        bfn, ext = os.path.splitext(filename)
+        if ext == ".dtbo":
+            is_overlay = True
+            bitfn = bfn + ".bit"
+        else:
+            is_overlay = False
+            bitfn = filename
+            
         # check if it's an actual bitstream
-        b = Bitstream(filename)
+        b = Bitstream(bitfn)
         # check if it's for *us*
         dev = b.device.split('-')[0]
         if dev != self.device:
             raise TypeError("%s is for a %s, this is a %s" %
-                            (filename, dev, self.device))
-        basefn = os.path.basename(filename)
+                            (bitfn, dev, self.device))
+        # copy the overlay if needed
+        if is_overlay:
+            ovfn = os.path.basename(filename)
+            libfirmwareovfn = self.LIBFIRMWARE_PATH + ovfn
+            if libfirmwareovfn != filename:
+                shutil.copyfile(filename, libfirmwareovfn)                
+        # process the bitstream now
+        basefn = os.path.basename(bitfn)
         libfirmwarefn = self.LIBFIRMWARE_PATH + basefn
         # our flags are always 0 because it's a full load
         fd = os.open(self.FLAGS_PATH, os.O_WRONLY)
         os.write(fd, b'0\n')
         os.close(fd)
         # check to see if we even need to do anything
-        if libfirmwarefn != filename:
-            shutil.copyfile(filename, libfirmwarefn)
-        # ok, now that it's there, load it
-        fd = os.open(self.FIRMWARE_PATH, os.O_WRONLY)
-        os.write(fd, bytes(basefn+'\n', encoding='utf-8'))
-        os.close(fd)
-        # update the current pointer
-        if os.path.exists(self.CURRENT) or os.path.islink(self.CURRENT):
-            os.remove(self.CURRENT)
-        os.symlink(libfirmwarefn, self.CURRENT)
-        return True
+        if libfirmwarefn != bitfn:
+            shutil.copyfile(bitfn, libfirmwarefn)
+
+        # if we are not loading an overlay just do this
+        if not is_overlay:
+            fd = os.open(self.FIRMWARE_PATH, os.O_WRONLY)
+            os.write(fd, bytes(basefn+'\n', encoding='utf-8'))
+            os.close(fd)
+            # update the current pointer
+            if os.path.exists(self.CURRENT) or os.path.islink(self.CURRENT):
+                os.remove(self.CURRENT)
+            os.symlink(libfirmwarefn, self.CURRENT)
+            return True
+        else:
+            if not os.path.exists(OVERLAY):
+                os.mkdir(OVERLAY)
+            fd = os.open(OVERLAYPATH, os.O_WRONLY)
+            os.write(fd, bytes(ovfn+'\n', encoding='utf-8'))
+            os.close(fd)
+            # update the current pointer
+            if os.path.exists(self.CURRENT) or os.path.islink(self.CURRENT):
+                os.remove(self.CURRENT)
+            os.symlink(libfirmwareovfn, self.CURRENT)
+            return True
 
     def raw_iio(self, fnList):
         if type(fnList) is not list:

@@ -1,0 +1,66 @@
+
+from serial import Serial
+from pueo.common.serialcobsdevice import SerialCOBSDevice
+import time
+import argparse
+import sys
+
+# default configuration
+sideMap = { 'L' : 'A',
+            'R' : 'B' }
+slotBitmap = { '1' : 0x81,
+               '2' : 0x82,
+               '3' : 0x84,
+               '4' : 0x88,
+               '5' : 0x90,
+               '6' : 0xA0,
+               '7' : 0xC0 }
+parser = argparse.ArgumentParser( prog = 'pyradbug',
+                                  description = 'configure RADBUG')
+parser.add_argument('slot', help='slot of crate to configure to (L|R)(1-7)')
+parser.add_argument('--port', help='RADBUG port (search if not specified)')
+
+args = parser.parse_args()
+slot = args.slot
+if not slot[0] in sideMap.keys():
+    print("slot must begin with one of", sideMap.keys())
+    sys.exit(1)
+side = sideMap[slot[0]]
+if not slot[1] in slotBitmap.keys():
+    print("slot must end with one of", slotBitmap.keys())
+    sys.exit(1)
+bitmap = slotBitmap[slot[1]]
+
+if not args.port:
+    port = SerialCOBSDevice.find_serial_devices(name='RB')[0][0]
+else:
+    port = args.port
+
+print("Using", port)
+dev = Serial(port, baudrate=9600)
+time.sleep(2)
+dev.write(b'\n\r')
+ln = dev.read_until(b'CMD >> ')
+print(ln.decode())
+if side == 'A':
+    offCmd = b'b '
+    onCmd = b'a '
+    ctrlCmd = b'ctrla 0x'
+else:
+    offCmd = b'a '
+    onCmd = b'b '
+    ctrlCmd = b'ctrlb 0x'
+
+dev.write(offCmd + b'0\r')
+ln = dev.read_until(b'CMD >> ')
+print(ln.decode())
+dev.write(onCmd + b'1\r')
+ln = dev.read_until(b'CMD >> ')
+print(ln.decode())
+dev.write(ctrlCmd+bitmap.to_bytes().hex().encode()+b'\r')
+ln = dev.read_until(b'CMD >> ')
+print(ln.decode())
+dev.write(b'status\r')
+ln = dev.read_until(b'CMD >> ')
+print(ln.decode())
+

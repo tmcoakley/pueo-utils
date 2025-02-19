@@ -1,0 +1,8 @@
+#!/bin/bash
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+PUEOPYTHON="${SCRIPT_DIR}/../pueo-python/"
+export PYTHONPATH=${PUEOPYTHON}:${PYTHONPATH}
+
+python3 ${SCRIPT_DIR}/pyradbug.py $@

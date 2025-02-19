@@ -223,9 +223,9 @@ class PyZynqMP:
             os.symlink(libfirmwarefn, self.CURRENT)
             return True
         else:
-            if not os.path.exists(OVERLAY):
-                os.mkdir(OVERLAY)
-            fd = os.open(OVERLAYPATH, os.O_WRONLY)
+            if not os.path.exists(self.OVERLAY):
+                os.mkdir(self.OVERLAY)
+            fd = os.open(self.OVERLAYPATH, os.O_WRONLY)
             os.write(fd, bytes(ovfn+'\n', encoding='utf-8'))
             os.close(fd)
             # update the current pointer

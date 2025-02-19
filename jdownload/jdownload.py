@@ -7,7 +7,17 @@
 #   I don't know if I'm using any progressbar2
 #   -exclusive features. Deal with it.
 from pysct.core import Xsct
-import progressbar
+pb = None
+try:
+    import progressbar2 as pb
+except ImportError:
+    pass
+if pb is None:
+    try:
+        import progressbar as pb
+    except ImportError:
+        pass
+
 import socket
 import sys
 import argparse
@@ -233,18 +243,25 @@ try:
     # Up the timeout, since it takes ~13 seconds per chunk
     xsct._socket.settimeout(30)
     # PRETTY PRETTY
-    widgets = widgets = [ args.remoteFile  + ":",
-                          ' ', progressbar.Percentage(),
-                          ' ', progressbar.GranularBar(),
-                          ' ', progressbar.AdaptiveETA(),
-                          ' ', progressbar.AdaptiveTransferSpeed() ]
-    bar = progressbar.ProgressBar( widgets=widgets,
-                                   max_value=lfilesz,
-                                   redirect_stdout=True).start()                          
+    if pb is not None:
+        widgets = widgets = [ args.remoteFile  + ":",
+                              ' ', pb.Percentage(),
+                              ' ', pb.GranularBar(),
+                              ' ', pb.AdaptiveETA(),
+                              ' ', pb.AdaptiveTransferSpeed() ]
+        bar = pb.ProgressBar( widgets=widgets,
+                              max_value=lfilesz,
+                              redirect_stdout=True).start()
+        updateFn = lambda x : bar.update(x)
+        finishFn = lambda : bar.finish()
+    else:
+        updateFn = lambda x : print(x)
+        finishFn = lambda : None
+
     while True:
         if v > 0:
             print("starting chunk %d..." % chunkCount, end='')
-        bar.update(chunkCount*JDLD_CHUNK_SIZE)
+        updateFn(chunkCount*JDLD_CHUNK_SIZE)
         chunk = os.read(lfile, JDLD_CHUNK_SIZE)
         chunkLen = len(chunk)
         if chunkLen > 0:
@@ -280,7 +297,8 @@ try:
             break
         else:
             tf.seek(0)
-    bar.finish()
+
+    finishFn()
     print("%s: Download successful after %d chunks" % (prog, chunkCount))
     sock.sendall(endfile)
     # clear out the prompt

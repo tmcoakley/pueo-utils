@@ -180,7 +180,8 @@ else:
     exit(1)
 
 # get a tempfile
-tf = NamedTemporaryFile()
+# let's try deferring the tempfile because windows is an asshole
+#tf = NamedTemporaryFile()
 
 # spawn the terminal (this also bounces us back to PSU as a target)
 termPort = startStopUart(xsct, True)
@@ -281,17 +282,20 @@ try:
         chunk = os.read(lfile, JDLD_CHUNK_SIZE)
         chunkLen = len(chunk)
         if chunkLen > 0:
-            tf.write(chunk)
-            tf.flush()
-            fn = translate_path(tf.name)
-            xsctCmd = 'dow -data %s %s; set done "done"' % (fn, JDLD_MAILBOX)
-            resp = xsct.do(xsctCmd)
-            if resp != 'done':
-                print("%s: got response %s ????" % (prog, resp))
-                sock.sendall(b'D0\n'+endfile)
-                sock.close()
-                startStopUart(xsct, False)
-                exit(1)
+            # try using the tempfile in a context manager
+            with NamedTemporaryFile(delete_on_close=False) as tf:
+                tf.write(chunk)
+                tf.flush()
+                fn = translate_path(tf.name)
+                tf.close()
+                xsctCmd = 'dow -data %s %s; set done "done"' % (fn, JDLD_MAILBOX)
+                resp = xsct.do(xsctCmd)
+                if resp != 'done':
+                    print("%s: got response %s ????" % (prog, resp))
+                    sock.sendall(b'D0\n'+endfile)
+                    sock.close()
+                    startStopUart(xsct, False)
+                    exit(1)
         if v > 0:
             print("downloaded...", end='')
         if chunkLen != JDLD_CHUNK_SIZE:
@@ -311,8 +315,6 @@ try:
         chunkCount = chunkCount + 1
         if chunkLen != JDLD_CHUNK_SIZE:
             break
-        else:
-            tf.seek(0)
 
     finishFn()
     print("%s: Download successful after %d chunks" % (prog, chunkCount))

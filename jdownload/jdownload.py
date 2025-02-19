@@ -170,7 +170,8 @@ if not os.path.exists(args.localFile):
 
 # get its file size
 lfilesz = os.path.getsize(args.localFile)    
-lfile = os.open(args.localFile, os.O_RDONLY)
+# open the damn thing, but DON'T USE os.open it DOESN'T WORK on Windows
+lfile = open(args.localFile, "rb")
 
 # connect to the xsct/xsdb server
 if args.port:
@@ -279,7 +280,7 @@ try:
         if v > 0:
             print("starting chunk %d..." % chunkCount, end='')
         updateFn(chunkCount*JDLD_CHUNK_SIZE)
-        chunk = os.read(lfile, JDLD_CHUNK_SIZE)
+        chunk = lfile.read(JDLD_CHUNK_SIZE)
         chunkLen = len(chunk)
         if chunkLen > 0:
             # try using the tempfile in a context manager
@@ -319,6 +320,7 @@ try:
             break
 
     finishFn()
+    lfile.close()
     print("%s: Download successful after %d chunks" % (prog, chunkCount))
     sock.sendall(endfile)
     # clear out the prompt

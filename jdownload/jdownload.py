@@ -6,7 +6,11 @@
 # - OK you need SOME form of progressbar
 #   I don't know if I'm using any progressbar2
 #   -exclusive features. Deal with it.
-from pysct.core import Xsct
+
+# I'm deferring pysct's import until after argparse
+# to allow for passing the path to it
+#from pysct.core import Xsct
+
 pb = None
 try:
     import progressbar2 as pb
@@ -129,8 +133,15 @@ parser.add_argument("--mode", help="either pynq or surf (default)",
                     default="surf")
 parser.add_argument("--safeStart",action='store_true',
                     help="Try to read out all characters possible before starting (takes 5+ seconds)")
+parser.add_argument("--pysct", help="path to pysct repository")
 
 args = parser.parse_args()
+if args.pysct:
+    sys.path.append(args.pysct)
+
+# now import
+from pysct.core import Xsct
+    
 v = args.verbose
 mode = args.mode
 

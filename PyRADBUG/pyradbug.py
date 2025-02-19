@@ -18,6 +18,7 @@ parser = argparse.ArgumentParser( prog = 'pyradbug',
                                   description = 'configure RADBUG')
 parser.add_argument('slot', help='slot of crate to configure to (L|R)(1-7)')
 parser.add_argument('--port', help='RADBUG port (search if not specified)')
+parser.add_argument('--pueo', help='path to pueo-python directory')
 
 args = parser.parse_args()
 slot = args.slot
@@ -31,6 +32,8 @@ if not slot[1] in slotBitmap.keys():
 bitmap = slotBitmap[slot[1]]
 
 if not args.port:
+    if args.pueo:
+        sys.path.append(args.pueo)
     from pueo.common.serialcobsdevice import SerialCOBSDevice    
     port = SerialCOBSDevice.find_serial_devices(name='RB')[0][0]
 else:

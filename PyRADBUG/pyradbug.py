@@ -1,6 +1,5 @@
 
 from serial import Serial
-from pueo.common.serialcobsdevice import SerialCOBSDevice
 import time
 import argparse
 import sys
@@ -32,6 +31,7 @@ if not slot[1] in slotBitmap.keys():
 bitmap = slotBitmap[slot[1]]
 
 if not args.port:
+    from pueo.common.serialcobsdevice import SerialCOBSDevice    
     port = SerialCOBSDevice.find_serial_devices(name='RB')[0][0]
 else:
     port = args.port

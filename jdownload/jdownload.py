@@ -283,19 +283,21 @@ try:
         chunkLen = len(chunk)
         if chunkLen > 0:
             # try using the tempfile in a context manager
-            with NamedTemporaryFile(delete_on_close=False) as tf:
-                tf.write(chunk)
-                tf.flush()
-                fn = translate_path(tf.name)
-                tf.close()
-                xsctCmd = 'dow -data %s %s; set done "done"' % (fn, JDLD_MAILBOX)
-                resp = xsct.do(xsctCmd)
-                if resp != 'done':
-                    print("%s: got response %s ????" % (prog, resp))
-                    sock.sendall(b'D0\n'+endfile)
-                    sock.close()
-                    startStopUart(xsct, False)
-                    exit(1)
+            # goddamnit screw you windows
+            tf = NamedTemporaryFile(delete=False)
+            tf.write(chunk)
+            tf.flush()
+            fn = translate_path(tf.name)
+            tf.close()
+            xsctCmd = 'dow -data %s %s; set done "done"' % (fn, JDLD_MAILBOX)
+            resp = xsct.do(xsctCmd)
+            os.unlink(tf.name)
+            if resp != 'done':
+                print("%s: got response %s ????" % (prog, resp))
+                sock.sendall(b'D0\n'+endfile)
+                sock.close()
+                startStopUart(xsct, False)
+                exit(1)
         if v > 0:
             print("downloaded...", end='')
         if chunkLen != JDLD_CHUNK_SIZE:

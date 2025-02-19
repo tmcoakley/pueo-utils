@@ -9,10 +9,15 @@ tar --transform="s,tps/tcl,xsdb/tclLib," -rf standalone_xsdb.tar tps/tcl/tcl8.5
 tar --transform="s,scripts/xsdb,xsdb/tclLib," -rf standalone_xsdb.tar scripts/xsdb/xsdb
 tar --transform="s,scripts/xsdb,xsdb/tclLib," -rf standalone_xsdb.tar scripts/xsdb/tcf
 
+# I think these are the necessary libraries
 tar --transform="s,tps/tcl/tcllib1.11.1,xsdb/tclLib," -rf standalone_xsdb.tar tps/tcl/tcllib1.11.1/cmdline
 tar --transform="s,tps/tcl/tcllib1.11.1,xsdb/tclLib," -rf standalone_xsdb.tar tps/tcl/tcllib1.11.1/control
 tar --transform="s,tps/tcl/tcllib1.11.1,xsdb/tclLib," -rf standalone_xsdb.tar tps/tcl/tcllib1.11.1/fileutil
 tar --transform="s,tps/tcl/tcllib1.11.1,xsdb/tclLib," -rf standalone_xsdb.tar tps/tcl/tcllib1.11.1/json
 tar --transform="s,tps/tcl/tcllib1.11.1,xsdb/tclLib," -rf standalone_xsdb.tar tps/tcl/tcllib1.11.1/uuid
+tar --transform="s,tps/tcl/tcllib1.11.1,xsdb/tclLib," -rf standalone_xsdb.tar tps/tcl/tcllib1.11.1/grammar_peg
+tar --transform="s,tps/tcl/tcllib1.11.1,xsdb/tclLib," -rf standalone_xsdb.tar tps/tcl/tcllib1.11.1/snit
+tar --transform="s,tps/tcl/tcllib1.11.1,xsdb/tclLib," -rf standalone_xsdb.tar tps/tcl/tcllib1.11.1/grammar_me
+
 tar --transform="s,scripts/xsdb/xsdb,xsdb," -rf standalone_xsdb.tar scripts/xsdb/xsdb/cmdlist
 gzip standalone_xsdb.tar

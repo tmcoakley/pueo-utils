@@ -7,13 +7,21 @@ import sys
 # default configuration
 sideMap = { 'L' : 'A',
             'R' : 'B' }
-slotBitmap = { '1' : 0x81,
-               '2' : 0x82,
-               '3' : 0x84,
-               '4' : 0x88,
-               '5' : 0x90,
-               '6' : 0xA0,
-               '7' : 0xC0 }
+slotBitmapL = { '1' : 0x81,
+                   '2' : 0x82,
+                   '3' : 0x84,
+                   '4' : 0x88, 
+                   '5' : 0x90,
+                   '6' : 0xA0,
+                   '7' : 0xC0, 
+                 }
+slotBitmapR = {'1' : 0xC0, 
+                    '2' : 0xA0, 
+                    '3' : 0x90, 
+                    '4' : 0x88,
+                    '5' : 0x84,
+                    '6' : 0x82,
+                    '7' : 0x81}
 parser = argparse.ArgumentParser( prog = 'pyradbug',
                                   description = 'configure RADBUG')
 parser.add_argument('slot', help='slot of crate to configure to (L|R)(1-7)')
@@ -26,10 +34,13 @@ if not slot[0] in sideMap.keys():
     print("slot must begin with one of", sideMap.keys())
     sys.exit(1)
 side = sideMap[slot[0]]
-if not slot[1] in slotBitmap.keys():
-    print("slot must end with one of", slotBitmap.keys())
+if not slot[1] in slotBitmapL.keys():
+    print("slot must end with one of", slotBitmapL.keys())
     sys.exit(1)
-bitmap = slotBitmap[slot[1]]
+if slot[0] == 'L': 
+    bitmap = slotBitmapL[slot[1]]
+else: 
+    bitmap = slotBitmapR[slot[1]]
 
 if not args.port:
     if args.pueo:

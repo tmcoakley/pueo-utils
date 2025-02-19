@@ -32,12 +32,17 @@ from math import ceil
 
 translate_path = lambda x : x
 # cygwin needs the pycygwin module for cygpath
-# to translate tmpfile paths. also we need forward-slashes not backslash
-# backslashes get translated
+# to translate tmpfile paths.
+
+# windows systems stupidly use double-backslashes which
+# Python/pysct turns into control-characters, so eff that $#!+
+# - use forward-slashes
 if platform == 'cygwin':
     from cygwin import cygpath
     translate_path = lambda x : cygpath(x, mode='windows').replace("\\","/")
-
+elif platform == 'win32' or platform == 'msys':
+    translate_path = lambda x : x.replace("\\","/")
+    
 JDLD_VERSION = b'V 1.0'
 JDLD_OK = b'K'
 JDLD_CHUNK_SIZE = 1024*1024

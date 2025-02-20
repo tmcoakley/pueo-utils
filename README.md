@@ -55,7 +55,7 @@ Figure it out.
 * the tcl8.5 library from e.g. ``Xilinx/Vivado_Lab/2022.2/tps/tcl/tcl8.5`` installed under $HOME/lib
 * the xsdb library from e.g. ``Xilinx/Vivado_Lab/2022.2/scripts/xsdb/xsdb`` installed under $HOME/lib
 * the tcf library from e.g. ``Xilinx/Vivado_Lab/2022.2/scripts/xsdb/tcf`` installed under $HOME/lib
-* the ``cmdline``, ``control``, ``fileutil``, ``json``, and ``uuid`` packages from
+* the ``cmdline``, ``control``, ``fileutil``, ``json``, ``uuid``, ``grammar_peg``, ``snit``, and ``grammar_me`` packages from
   e.g. ``Xilinx/Vivado_Lab/2022.2/tps/tcl/tcllib1.11.1/`` installe under $HOME/lib.
 
 plus optionally the completion list from

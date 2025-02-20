@@ -25,7 +25,7 @@ class HskProcessor:
         rpkt[0] = self.hsk.myID
         rpkt[2] = 15
         rpkt[3] = 4
-        rpkt[4:8] = hsk.statistics()
+        rpkt[4:8] = self.hsk.statistics()
         rpkt[8] = (256-sum(rpkt[4:8])) & 0xFF
         self.hsk.sendPacket(rpkt)
     

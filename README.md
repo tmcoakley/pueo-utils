@@ -3,7 +3,7 @@
 If you're looking for the Python software that runs on the SURF
 or TURF, they're now at:
 
-* [software-pueo-surf](https://github.com/barawn/software-pueo-surf)
+* [software-pueo-surf6](https://github.com/barawn/software-pueo-surf6)
 * [software-pueo-turf](https://github.com/barawn/software-pueo-turf)
 
 If you are looking for the Python software used to **interact** with

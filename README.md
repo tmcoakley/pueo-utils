@@ -1,3 +1,22 @@
+# NOTE NOTE NOTE NOTE
+
+This repository is a mess. I need to reorganize things. It started
+out as a couple little dumb scripts/programs and turned into
+"let's put the whole software that's on the SURF here."
+
+If you look at software-pueo-turf, that's more organized:
+I will probably create a software-pueo-surf repo which includes
+this instead. Then move the create_pueo_sqfs script there,
+also move the pysurfHskd stuff there, and get rid of the
+pueo-python inclusion here. Which means the FINAL goal is:
+
+* pueo-utils builds python.sqfs (common between SURF/TURF) and
+contains common stuff on SURF/TURF and silly scripts like jdownload/etc.
+* software-pueo-surf will build pueo.sqfs for the SURF
+* software-pueo-turf will build pueo.sqfs for the TURF
+
+I'M WORKING ON IT
+
 # pueo-utils
 
 All of these things require xsdb/xsct, which requires Vivado Lab because Xilinx thinks hey, what's a

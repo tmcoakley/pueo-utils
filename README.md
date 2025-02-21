@@ -1,23 +1,37 @@
 # NOTE NOTE NOTE NOTE
 
-This repository is a mess. I need to reorganize things. It started
-out as a couple little dumb scripts/programs and turned into
-"let's put the whole software that's on the SURF here."
+If you're looking for the Python software that runs on the SURF
+or TURF, they're now at:
 
-If you look at software-pueo-turf, that's more organized:
-I will probably create a software-pueo-surf repo which includes
-this instead. Then move the create_pueo_sqfs script there,
-also move the pysurfHskd stuff there, and get rid of the
-pueo-python inclusion here. Which means the FINAL goal is:
+* [software-pueo-surf](https://github.com/barawn/software-pueo-surf)
+* [software-pueo-turf](https://github.com/barawn/software-pueo-turf)
 
-* pueo-utils builds python.sqfs (common between SURF/TURF) and
-contains common stuff on SURF/TURF and silly scripts like jdownload/etc.
-* software-pueo-surf will build pueo.sqfs for the SURF
-* software-pueo-turf will build pueo.sqfs for the TURF
+If you are looking for the Python software used to **interact** with
+the SURF/TURF/TURFIO firmware, it is at:
 
-I'M WORKING ON IT
+* [pueo-python](https://github.com/barawn/pueo-python)
+
+or it is also present in the above repositories since they interact
+with themselves too.
 
 # pueo-utils
+
+pueo-utils contains several things.
+
+* The binaries/etc. and scripts for the core python.sqfs on PetaLinux.
+  The Python on PUEO's PetaLinux comes from a slightly modified
+  [PyRun](https://github.com/barawn/egenix-pyrun) with the added modules
+  in ``pueo-pyrun-extras`` (see README.md in that directory).
+* Tools for interacting with the crate. For instance, ``PyRADBUG`` for
+  configuring the RADBUG debugger, and ``jdownload`` for transferring
+  software to the SURF/TURF via JTAG.
+* Scripts for grabbing a small standalone version of the Xilinx tools
+  needed: the command line debugger (either xsct/xsdb) and the hardware
+  server (hw_server).
+* Common modules and scripts used inside the SURF/TURF software.
+  (e.g. ``pyzynqmp``/``pysoceeprom``/``signalhandler`` etc.)
+
+# Xilinx tools
 
 All of these things require xsdb/xsct, which requires Vivado Lab because Xilinx thinks hey, what's a
 gigabyte between friends.

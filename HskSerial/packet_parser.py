@@ -72,9 +72,7 @@ class PacketParser:
         return tftemp, rpu, apu
         
 
-    def tempTURFIO(self, recpacket): # this isnt just a packet readdddd its a packet read with a very specific applicaiton 
-        # i heavily need to fix this
-
+    def tempTURFIO(self, recpacket):
         tfiotemp = int.from_bytes(recpacket[0:2])
         srftemp = []
         for iter in range(2,16,2): 
@@ -113,6 +111,26 @@ class PacketParser:
                 apuarray = (decimal_values[iter])
         return rpuarray, apuarray
     
+    def getVolts(self):
+        print()
+        pktTF = self.packetsend(self.TF, 'eVolts')
+
+        voltsTF = int.from_bytes(pktTF[0:2])
+        voltsSFin = []
+        voltsSFout = []
+        for iter in range(2,30,4): 
+            voltsSFin.append(int.from_bytes(pktTF[iter:iter+2]))
+            voltsSFout.append(int.from_bytes(pktTF[iter+2:iter+4]))
+
+        voltsTF = (voltsTF * 26.35) / 2 ** 12
+
+        for iter in range(len(voltsSFin)): 
+            voltsSFin[iter] = (vSFeq(voltsSFin[iter]))
+            voltsSFout[iter] = (vSFeq(voltsSFout[iter]))
+
+        def vSFeq(num): 
+            return ((num + 0.5) * 5.104) / 1000
+
     # Random utils in case
     def bintohex(num): 
         return hex(int(str(num), 2))

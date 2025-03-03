@@ -1,6 +1,0 @@
-[submodule "pyrfdc"]
-	path = pyrfdc
-	url = https://github.com/barawn/pyrfdc
-[submodule "pueo-python"]
-	path = pueo-python
-	url = https://github.com/barawn/pueo-python

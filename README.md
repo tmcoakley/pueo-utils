@@ -1,4 +1,37 @@
+# NOTE NOTE NOTE NOTE
+
+If you're looking for the Python software that runs on the SURF
+or TURF, they're now at:
+
+* [software-pueo-surf6](https://github.com/barawn/software-pueo-surf6)
+* [software-pueo-turf](https://github.com/barawn/software-pueo-turf)
+
+If you are looking for the Python software used to **interact** with
+the SURF/TURF/TURFIO firmware, it is at:
+
+* [pueo-python](https://github.com/barawn/pueo-python)
+
+or it is also present in the above repositories since they interact
+with themselves too.
+
 # pueo-utils
+
+pueo-utils contains several things.
+
+* The binaries/etc. and scripts for the core python.sqfs on PetaLinux.
+  The Python on PUEO's PetaLinux comes from a slightly modified
+  [PyRun](https://github.com/barawn/egenix-pyrun) with the added modules
+  in ``pueo-pyrun-extras`` (see README.md in that directory).
+* Tools for interacting with the crate. For instance, ``PyRADBUG`` for
+  configuring the RADBUG debugger, and ``jdownload`` for transferring
+  software to the SURF/TURF via JTAG.
+* Scripts for grabbing a small standalone version of the Xilinx tools
+  needed: the command line debugger (either xsct/xsdb) and the hardware
+  server (hw_server).
+* Common modules and scripts used inside the SURF/TURF software.
+  (e.g. ``pyzynqmp``/``pysoceeprom``/``signalhandler`` etc.)
+
+# Xilinx tools
 
 All of these things require xsdb/xsct, which requires Vivado Lab because Xilinx thinks hey, what's a
 gigabyte between friends.

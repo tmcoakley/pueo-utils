@@ -1,5 +1,5 @@
 import time 
-from HskSerial.HskSerial import HskSerial, HskPacket
+from HskSerial import HskSerial, HskPacket
 
 # These are the slots on the DAQ Crate. They are numbered such that you start 
 # in the middle and move outwards for each RACK
@@ -61,15 +61,15 @@ class PacketParser:
 
     # Runs and Interprets eTemps for all boards
     def getTemp(self): 
-        print()
+        print("")
         pkttf = self.packetsend(self.TF, 'eTemps')
         tftemp = self.tempTURFIO(pkttf)
 
         for iter in range(0,7):
             pktsf = self.packetsend(self.SF[iter], 'eTemps' )
-            rpu, apu = self.tempSURF(pktsf, self.SF[iter])
-        print()
-        return tftemp, rpu, apu
+            rpu = self.tempSURF(pktsf, self.SF[iter])
+        print("")
+        return tftemp, rpu
         
 
     def tempTURFIO(self, recpacket):
@@ -95,21 +95,22 @@ class PacketParser:
         return temparray
     
     def tempSURF(self, recpacket, surfid): 
+
+        def SFTempFunc(val): 
+            return (val * 509.3140064) / 2 **16 - 280.23087870
+        
         decimal_values = []
         for iter in range(0,4,2): 
             decimal_values.append(int.from_bytes(recpacket[iter:iter+2]))
        
-        for iter in range(len(decimal_values)) : 
-            decimal_values[iter] =  (decimal_values[iter] * 509.3140064) / 2 **16 - 280.23087870
-            print('SURF {}'.format(self.hextodec(surfid)))
-            if iter == 0:
+        for iter in range(0,len(decimal_values),2) : 
+            rpuTemp =  SFTempFunc(decimal_values[iter])
+            apuTemp =  SFTempFunc(decimal_values[iter+1])
 
-                print("RPU: {}C".format(format(decimal_values[iter], '.2f')))
-                rpuarray = decimal_values[iter]
-            else: 
-                print("APU: {}C".format(format(decimal_values[iter], '.2f')))
-                apuarray = (decimal_values[iter])
-        return rpuarray, apuarray
+            print('SURF {}'.format(self.hextodec(surfid)))
+            print("RPU: {}C".format(format(rpuTemp, '.2f')))
+            print("APU: {}C".format(format(apuTemp, '.2f')))
+
     
     def getVolts(self):
         print()
@@ -123,22 +124,24 @@ class PacketParser:
             voltsSFout.append(int.from_bytes(pktTF[iter+2:iter+4]))
 
         voltsTF = (voltsTF * 26.35) / 2 ** 12
-
+        
+        def vSFeq(num): 
+            return ((num + 0.5) * 5.104) / 1000
+        
         for iter in range(len(voltsSFin)): 
             voltsSFin[iter] = (vSFeq(voltsSFin[iter]))
             voltsSFout[iter] = (vSFeq(voltsSFout[iter]))
 
-        def vSFeq(num): 
-            return ((num + 0.5) * 5.104) / 1000
+        
 
     # Random utils in case
-    def bintohex(num): 
+    def bintohex(self, num): 
         return hex(int(str(num), 2))
 
-    def dectohex(num): 
+    def dectohex(self, num): 
         return hex(num + 128)
 
-    def hextodec(num): 
+    def hextodec(self, num): 
         return int(str(num)) - 128
   
         

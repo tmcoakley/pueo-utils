@@ -36,7 +36,7 @@ class HskPacket:
                  dest,
                  cmd,
                  data=None,
-                 src=0x00):
+                 src=0xFE):
         if data is None:
             self.data = b''
         elif isinstance(data, str):

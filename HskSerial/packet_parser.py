@@ -40,6 +40,7 @@ class PacketParser:
 
         self.dev = HskSerial(port)
         
+        # Set up TURFIO/SURFs in target crate
         if crate == 'H': 
             if rack == 'R': 
                 self.SF = surfsHR 
@@ -55,12 +56,17 @@ class PacketParser:
                 self.SF = surfsVL
                 self.TF = turfioVL
 
+        # Added this because many things loop through all SURFs
+        # Establishes number of SURFs 
         if crate == 'H': 
             self.endVal = 7 # 14 SURFs in HDAQ
         else: 
             self.endVal = 6 # 12 SURFs in VDAQ
 
+        # Misc. things that are useful
         self.crate = crate
+
+        # Updated SQFS version
         self.sqfsCurrent = b'0.2.9'
 
     def help(self): 
@@ -94,24 +100,22 @@ class PacketParser:
         """
         print(helpText)
 
-    # Packet send and receive
+    
     def packetsend(self, addr, cmd): 
+        """Sends packets and receives response. Returns received packet"""
         self.dev.send(HskPacket(addr, cmd))
         pkt = self.dev.receive()
         return pkt.data
 
+    
     def surfID(self, num): 
+        """Returns the SURF SOCID"""
         return self.hextodec(self.SF[num])
 
     def sayHi(self): 
         """Returns which TURFIOs/SURFs are online and responsive"""
 
         cmd = 'ePingPong'
-
-        if self.crate == 'H': 
-            endVal = 7 # 14 SURFs in HDAQ
-        else: 
-            endVal = 6 # 12 SURFs in VDAQ
         
         try:
             self.packetsend(self.TF, cmd)
@@ -120,7 +124,7 @@ class PacketParser:
             print('TURFIO ignored you :(')
         
       
-        for iter in range(0, endVal):
+        for iter in range(0, self.endVal):
             print("")
             try: 
                 self.packetsend(self.SF[iter], cmd)
@@ -131,6 +135,8 @@ class PacketParser:
 
 
     def tfIdentify(self): 
+        """Returns which TURFIOs/SURFs are online and responsive"""
+
         cmd = 'eIdentify'
         recpkt = self.packetsend(self.TF, cmd)
         vSoftware = int.from_bytes(recpkt[0:1])

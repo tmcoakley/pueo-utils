@@ -90,9 +90,9 @@ class HskPacket:
 # ...
 # i am not smart
 class HskSerial(Serial):
-    def __init__(self, path, srcId=None):
+    def __init__(self, path, baudrate=500000, srcId=None):
         """ Create a housekeeping parser from a tty-like object. If srcId is provided, packets always come from that ID. """
-        super().__init__(path, baudrate=500000, timeout=5)
+        super().__init__(path, baudrate=baudrate, timeout=5)
         self.src = srcId
 
     def send(self, pkt, override=False):

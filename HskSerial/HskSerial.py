@@ -140,7 +140,7 @@ class HskSerial(Serial, HskBase):
     def __init__(self, path, baudrate=500000, srcId=None):
         """ Create a housekeeping parser from a tty-like object. If srcId is provided, packets always come from that ID. """
         Serial.__init__(self, path, baudrate=baudrate, timeout=5)
-        HskBase.__init__(srcId)
+        HskBase.__init__(self, srcId)
         self._writeImpl = self.write
         self._readImpl = lambda : self.read_until(b'\x00')
         

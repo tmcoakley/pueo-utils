@@ -125,7 +125,7 @@ class HskEthernet(HskBase):
         self.hs = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.hs.bind(self.localIpPort)
         self._writeImpl = lambda x : self.hs.sendto(x, self.remoteIpPort)
-        self._readImpl = lambda : self.recv(1024)
+        self._readImpl = lambda : self.hs.recv(1024)
     
 # build up and send the command given the destination, type,
 # and the data to deliver if any.

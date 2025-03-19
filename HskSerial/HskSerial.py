@@ -120,7 +120,7 @@ class HskEthernet(HskBase):
                  localPort=21352):
         HskBase.__init__(self, srcId)
         self.localIpPort = ( localIp, localPort)
-        self.remoteIpPort = ( remoteIp, remotePort )
+        self.remoteIpPort = ( remoteIp, self.TH_PORT )
 
         self.hs = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.hs.bind(self.localIpPort)

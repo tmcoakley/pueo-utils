@@ -87,7 +87,7 @@ class PacketParser:
         softwareVersion()
         Returns the TURFIO houskeeping version, SURF Petalinux and SQFS versions 
 
-        sfIdentify()
+        sfIdentify()                                         
         Returns the SURF PS IDs, MAC Addr, and various software versions
 
         tfIdentify()

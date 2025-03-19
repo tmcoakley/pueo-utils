@@ -1,5 +1,8 @@
+# this contains both HskSerial and HskEthernet
+# YES I KNOW THE NAME OF THE MODULE IS STUPID
 from serial import Serial
 from cobs import cobs
+import socket
 
 # dev.send(HskPacket(0x80, 0x00)) as well as fully-filling it
 # from a response.
@@ -78,22 +81,12 @@ class HskPacket:
         pkt += self.data
         pkt.append((256-(sum(pkt[4:]))) & 0xFF)
         return cobs.encode(pkt)
-        
 
-# build up and send the command given the destination, type,
-# and the data to deliver if any.
-# Data defaults to none b/c it allows us to do like
-# sendHskCmd(dev, 0x80, 0x00) straight out.
-# the smart user may create dicts or something to lookup
-# IDs and command types with enums that can cast to ints or some'n
-# src defaults to zero
-# ...
-# i am not smart
-class HskSerial(Serial):
-    def __init__(self, path, baudrate=500000, srcId=None):
-        """ Create a housekeeping parser from a tty-like object. If srcId is provided, packets always come from that ID. """
-        super().__init__(path, baudrate=baudrate, timeout=5)
-        self.src = srcId
+class HskBase:
+    def __init__(self, srcId):
+        self.srcId = srcId
+        self._writeImpl = lambda x : None
+        self._readImpl = lambda : none
 
     def send(self, pkt, override=False):
         """ Send a housekeeping packet. Uses HskSerial.src as source unless override is true or no source was provided """
@@ -101,11 +94,11 @@ class HskSerial(Serial):
             raise TypeError("pkt must be of type HskPacket")
         if not override:
             pkt.src = self.src
-        self.write(pkt.encode()+b'\x00')
+        self._writeImpl(pkt.encode()+b'\x00')
 
     def receive(self):
         """ Receive a housekeeping packet. No timeout right now. """
-        crx = self.read_until(expected=b'\x00').strip(b'\x00')
+        crx = self._readImpl().strip(b'\x00')
         rx = cobs.decode(crx)
         # checky checky
         if len(rx) < 5:
@@ -116,3 +109,42 @@ class HskSerial(Serial):
                          rx[2],
                          data=rx[4:-1],
                          src=rx[0])
+
+        
+class HskEthernet(HskBase):
+    TH_PORT = 21608
+    def __init__(self,
+                 srcId=0xFE,
+                 localIp="192.168.1.1",
+                 remoteIp="192.168.1.128",
+                 localPort=21352):
+        HskBase.__init__(self, srcId)
+        self.localIpPort = ( localIp, localPort)
+        self.remoteIpPort = ( remoteIp, remotePort )
+
+        self.hs = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.hs.bind(self.localIpPort)
+        self._writeImpl = lambda x : self.hs.sendto(x, self.remoteIpPort)
+        self._readImpl = lambda : self.recv(1024)
+    
+# build up and send the command given the destination, type,
+# and the data to deliver if any.
+# Data defaults to none b/c it allows us to do like
+# sendHskCmd(dev, 0x80, 0x00) straight out.
+# the smart user may create dicts or something to lookup
+# IDs and command types with enums that can cast to ints or some'n
+# src defaults to zero
+# ...
+# i am not smart
+class HskSerial(Serial, HskBase):
+    def __init__(self, path, baudrate=500000, srcId=None):
+        """ Create a housekeeping parser from a tty-like object. If srcId is provided, packets always come from that ID. """
+        Serial.__init__(self, path, baudrate=baudrate, timeout=5)
+        HskBase.__init__(srcId)
+        self._writeImpl = self.write
+        self._readImpl = lambda : self.read_until(b'\x00')
+        
+
+        
+
+

@@ -84,7 +84,7 @@ class HskPacket:
 
 class HskBase:
     def __init__(self, srcId):
-        self.srcId = srcId
+        self.src = srcId
         self._writeImpl = lambda x : None
         self._readImpl = lambda : none
 

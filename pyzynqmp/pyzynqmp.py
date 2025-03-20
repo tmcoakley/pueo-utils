@@ -176,7 +176,17 @@ class PyZynqMP:
         state = self.state()
         return state == self.STATE_OPERATING
 
+    def reload(self, filename):
+        """ If filename is an overlay, remove overlay first. """
+        bfn, ext = os.path.splitext(filename)
+        # if this is an overlay, remove any previous one first
+        if ext == ".dtbo":
+            if os.path.exists(OVERLAY):
+                os.rmdir(OVERLAY)
+        self.load(filename)
+    
     def load(self, filename):
+        """ Load firmware or overlay """
         if not os.path.isfile(filename):
             raise FileNotFoundError("%s does not exist" % filename)
         # check if it's a DTBO, not a bitstream:
@@ -280,7 +290,8 @@ if __name__ == "__main__":
               'state' : lambda z=zynq : print(z.state()),
               'ggs' : lambda z=zynq,arg=fi : print(z.ggs(int(arg))) if arg is not None else print("Need a GGS number"),
               'pggs' : lambda z=zynq,arg=fi : print(z.pggs(int(arg))) if arg is not None else print("Need a PGGS number"),
-              'load' : lambda z=zynq,arg=fi : z.load(arg) if arg is not None else print("Need a filename") }
+              'load' : lambda z=zynq,arg=fi : z.load(arg) if arg is not None else print("Need a filename"),
+              'reload' : lambda z=zynq,arg=fi : z.reload(arg) if arg is not None else print("Need a filename")}
     
     if len(sys.argv) < 2:
         fn = None

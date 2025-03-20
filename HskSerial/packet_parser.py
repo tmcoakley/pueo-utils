@@ -1,19 +1,6 @@
 import time 
 from HskSerial import HskSerial, HskPacket
 
-# These are the slots on the DAQ Crate. They are numbered such that you start 
-# in the middle and move outwards for each RACK
-Slots = {
-    0 : "TURFIO Slot 0",
-    1 : "SURF Slot 1",
-    2 : "SURF Slot 2",
-    3 : "SURF Slot 3",
-    4 : "SURF Slot 4",
-    5 : "SURF Slot 5",
-    6 : "SURF Slot 6",
-    7 : "SURF Slot 7"
-}
-
 # SURFs in Hpol LRACK --> SOCID
 surfsHL = [ 0x97, 0xa0, 0x99, 0x8d, 0x9d, 0x94, 0x8a ]
 

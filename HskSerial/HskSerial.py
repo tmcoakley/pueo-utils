@@ -115,8 +115,8 @@ class HskEthernet(HskBase):
     TH_PORT = 21608
     def __init__(self,
                  srcId=0xFE,
-                 localIp="192.168.1.1",
-                 remoteIp="192.168.1.128",
+                 localIp="10.68.65.1",
+                 remoteIp="10.68.65.81",
                  localPort=21352):
         HskBase.__init__(self, srcId)
         self.localIpPort = ( localIp, localPort)

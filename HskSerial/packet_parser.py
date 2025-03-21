@@ -96,7 +96,7 @@ class PacketParser:
 
     
     def surfID(self, num): 
-        """Returns the SURF SOCID"""
+        """Returns the SURF SOCID (matches whats on crate)"""
         return self.hextodec(self.SF[num])
 
     def sayHi(self): 
@@ -122,13 +122,13 @@ class PacketParser:
 
 
     def tfIdentify(self): 
-        """Returns which TURFIOs/SURFs are online and responsive"""
+        """Currently just returns what HSK software version"""
 
         cmd = 'eIdentify'
         recpkt = self.packetsend(self.TF, cmd)
         vSoftware = int.from_bytes(recpkt[0:1])
         bitSF = int.from_bytes(recpkt[1:2])
-        print('TURFIO housekeeping: v{}'.format(vSoftware))
+        print('TURFIO HSK: v{}'.format(vSoftware))
         
 
     def sfIdentify(self): 
@@ -196,18 +196,17 @@ class PacketParser:
 
     # Runs and Interprets eTemps for all boards
     def getTemps(self): 
+
+        """Returns the TURFIO die temperature, as well as the SURF hotswap and die temperatures """
+
         print("")
         pkttf = self.packetsend(self.TF, 'eTemps')
         tftemp = self.tempTURFIO(pkttf) # just in case
 
-        if self.crate == 'H': 
-            endVal = 7 # 14 SURFs in HDAQ
-        else: 
-            endVal = 6 # 12 SURFs in VDAQ
 
         rpuTemps = []
         apuTemps = []
-        for iter in range(0,endVal):
+        for iter in range(0, self.endVal):
             
             pktsf = self.packetsend(self.SF[iter], 'eTemps' )
             rpuTemp, apuTemp = self.tempSURF(pktsf, self.SF[iter])
@@ -216,7 +215,7 @@ class PacketParser:
 
         print("TURFIO: {}C".format(format(tftemp[0], '.2f')))
         print("")
-        for iter in range(0, endVal): 
+        for iter in range(0, self.endVal): 
             print('SURF {}'.format(self.hextodec(self.SF[iter])))
             print('Hotswap: {}C'.format(tftemp[iter+1]))
             print("RPU: {}C".format(format(rpuTemps[iter], '.2f')))
@@ -228,6 +227,7 @@ class PacketParser:
         
 
     def tempTURFIO(self, recpacket, printall = False):
+
         tfiotemp = int.from_bytes(recpacket[0:2])
         srftemp = []
         for iter in range(2,16,2): 

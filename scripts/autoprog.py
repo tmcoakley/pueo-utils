@@ -44,8 +44,10 @@ if __name__ == '__main__':
     # are we running currently
     if zynq.state() != 'operating' or (not os.path.islink(CURFW)):
         current_fw = None
+        zynq_fn = zynq.load
     else:
         current_fw = os.readlink(CURFW)
+        zynq_fn = zynq.reload
     # what's the next pointer
     if not os.path.islink(NXTFW):
         next_fw = None
@@ -68,7 +70,7 @@ if __name__ == '__main__':
         loadOk = False
         try:
             print("autoprog.py: Programming %s" % next_fw)
-            zynq.load(next_fw)
+            zynq_fn(next_fw)
             loadOk = True
         except Exception as e:
             print("autoprog.py: Loading %s threw an exception:" % next_fw, repr(e))
@@ -78,7 +80,7 @@ if __name__ == '__main__':
         for s in bsLoadOrder:
             try:
                 print("autoprog.py: Programming %s" % slot[s])
-                zynq.load(slot[s])
+                zynq_fn(slot[s])
                 loadOk = True
             except Exception as e:
                 print("autoprog.py: Loading %s threw an exception:" % slot[s], repr(e))
@@ -87,7 +89,7 @@ if __name__ == '__main__':
     if not loadOk:
         print("autoprog.py: Falling back to %s" % slot[0])
         try:
-            zynq.load(slot[0])
+            zynq_fn(slot[0])
         except Exception as e:
             print("autoprog.py: Loading %s threw an exception:" % slot[s], repr(e))
             exit(1)

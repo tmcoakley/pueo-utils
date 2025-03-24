@@ -19,6 +19,7 @@ class HskPacket:
         "eTemps" : 0x10,
         "eVolts" : 0x11,
         "eIdentify" : 0x12,
+        "eCurrents" : 0x13,
         "eStartState" : 0x20,
         "eFwParams" : 0x80,
         "eFwNext" : 0x81,
@@ -31,7 +32,11 @@ class HskPacket:
         "eSoftNextReboot" : 0x88,
         "eJournal" : 0xBD,
         "eDownloadMode" : 0xBE,
-        "eRestart" : 0xBF }
+        "eRestart" : 0xBF,
+        "eEnable" : 0xC8,
+        "ePMBus" : 0xC9,
+        "eReloadFirmware" : 0xCA
+        }
 
     strings = dict(zip(cmds.values(),cmds.keys()))
 

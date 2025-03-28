@@ -1,5 +1,8 @@
+# this contains both HskSerial and HskEthernet
+# YES I KNOW THE NAME OF THE MODULE IS STUPID
 from serial import Serial
 from cobs import cobs
+import socket
 
 # dev.send(HskPacket(0x80, 0x00)) as well as fully-filling it
 # from a response.
@@ -16,6 +19,7 @@ class HskPacket:
         "eTemps" : 0x10,
         "eVolts" : 0x11,
         "eIdentify" : 0x12,
+        "eCurrents" : 0x13,
         "eStartState" : 0x20,
         "eFwParams" : 0x80,
         "eFwNext" : 0x81,
@@ -28,7 +32,11 @@ class HskPacket:
         "eSoftNextReboot" : 0x88,
         "eJournal" : 0xBD,
         "eDownloadMode" : 0xBE,
-        "eRestart" : 0xBF }
+        "eRestart" : 0xBF,
+        "eEnable" : 0xC8,
+        "ePMBus" : 0xC9,
+        "eReloadFirmware" : 0xCA
+        }
 
     strings = dict(zip(cmds.values(),cmds.keys()))
 
@@ -36,7 +44,7 @@ class HskPacket:
                  dest,
                  cmd,
                  data=None,
-                 src=0x00):
+                 src=0xFE):
         if data is None:
             self.data = b''
         elif isinstance(data, str):
@@ -78,28 +86,24 @@ class HskPacket:
         pkt += self.data
         pkt.append((256-(sum(pkt[4:]))) & 0xFF)
         return cobs.encode(pkt)
-        
 
-# build up and send the command given the destination, type,
-# and the data to deliver if any.
-# Data defaults to none b/c it allows us to do like
-# sendHskCmd(dev, 0x80, 0x00) straight out.
-# the smart user may create dicts or something to lookup
-# IDs and command types with enums that can cast to ints or some'n
-# src defaults to zero
-# ...
-# i am not smart
-class HskSerial(Serial):
-    def __init__(self, path):
-        super().__init__(path, baudrate=500000, timeout=5)
+class HskBase:
+    def __init__(self, srcId):
+        self.src = srcId
+        self._writeImpl = lambda x : None
+        self._readImpl = lambda : none
 
-    def send(self, pkt):
+    def send(self, pkt, override=False):
+        """ Send a housekeeping packet. Uses HskSerial.src as source unless override is true or no source was provided """
         if not isinstance(pkt, HskPacket):
             raise TypeError("pkt must be of type HskPacket")
-        self.write(pkt.encode()+b'\x00')
+        if not override:
+            pkt.src = self.src
+        self._writeImpl(pkt.encode()+b'\x00')
 
     def receive(self):
-        crx = self.read_until(expected=b'\x00').strip(b'\x00')
+        """ Receive a housekeeping packet. No timeout right now. """
+        crx = self._readImpl().strip(b'\x00')
         rx = cobs.decode(crx)
         # checky checky
         if len(rx) < 5:
@@ -110,3 +114,42 @@ class HskSerial(Serial):
                          rx[2],
                          data=rx[4:-1],
                          src=rx[0])
+
+        
+class HskEthernet(HskBase):
+    TH_PORT = 21608
+    def __init__(self,
+                 srcId=0xFE,
+                 localIp="10.68.65.1",
+                 remoteIp="10.68.65.81",
+                 localPort=21352):
+        HskBase.__init__(self, srcId)
+        self.localIpPort = ( localIp, localPort)
+        self.remoteIpPort = ( remoteIp, self.TH_PORT )
+
+        self.hs = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.hs.bind(self.localIpPort)
+        self._writeImpl = lambda x : self.hs.sendto(x, self.remoteIpPort)
+        self._readImpl = lambda : self.hs.recv(1024)
+    
+# build up and send the command given the destination, type,
+# and the data to deliver if any.
+# Data defaults to none b/c it allows us to do like
+# sendHskCmd(dev, 0x80, 0x00) straight out.
+# the smart user may create dicts or something to lookup
+# IDs and command types with enums that can cast to ints or some'n
+# src defaults to zero
+# ...
+# i am not smart
+class HskSerial(Serial, HskBase):
+    def __init__(self, path, baudrate=500000, srcId=None):
+        """ Create a housekeeping parser from a tty-like object. If srcId is provided, packets always come from that ID. """
+        Serial.__init__(self, path, baudrate=baudrate, timeout=5)
+        HskBase.__init__(self, srcId)
+        self._writeImpl = self.write
+        self._readImpl = lambda : self.read_until(b'\x00')
+        
+
+        
+
+

@@ -250,9 +250,9 @@ class PacketParser:
             if printall == True: 
                 print("{}: {}C".format('TURFIO Slot 0', format(tfiotemp, '.2f')))
                 print("")
-                for iter in range(len(srftemp)): 
+                """for iter in range(len(srftemp)): 
                     print("SURF Slot {}: {}C".format(iter + 1, temparray[iter]))
-                    print("")
+                    print("")"""
                 
         return temparray
     
@@ -274,6 +274,7 @@ class PacketParser:
                 print('SURF {}'.format(self.hextodec(surfid)))
                 print("RPU: {}C".format(format(rpuTemp[iter], '.2f')))
                 print("APU: {}C".format(format(apuTemp[iter], '.2f')))
+                
         return rpuTemp, apuTemp
 
     
@@ -320,11 +321,10 @@ class PacketParser:
             print('DDR_1V2 (nominal 1.2V): {}V'.format(self.rounding(vSFRF(int.from_bytes(pktSF[10:12])))))
 
         
+    # Random utils in case
     def rounding(self, num): 
         return format(num, '.2f')
         
-
-    # Random utils in case
     def bintohex(self, num): 
         return hex(int(str(num), 2))
 

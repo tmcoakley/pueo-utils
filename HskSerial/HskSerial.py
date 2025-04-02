@@ -3,6 +3,8 @@
 from serial import Serial
 from cobs import cobs
 import socket
+from HskPacketParser import HskParser
+
 
 # dev.send(HskPacket(0x80, 0x00)) as well as fully-filling it
 # from a response.

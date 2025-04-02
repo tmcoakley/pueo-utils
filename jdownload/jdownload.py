@@ -265,7 +265,7 @@ try:
         bar_widget = None
         try:
             bar_widget = pb.GranularBar()
-        except e:
+        except:
             bar_widget = pb.Bar()
         widgets = widgets = [ args.remoteFile  + ":",
                               ' ', pb.Percentage(),

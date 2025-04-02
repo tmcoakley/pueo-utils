@@ -2,6 +2,7 @@
 # YES I KNOW THE NAME OF THE MODULE IS STUPID
 from serial import Serial
 from cobs import cobs
+import sys
 import socket
 
 # dev.send(HskPacket(0x80, 0x00)) as well as fully-filling it
@@ -74,7 +75,7 @@ class HskPacket:
             if asString:
                 myStr += ": " + self.data.decode()
             else:
-                myStr += ": " + self.data.hex(sep=' ')
+                myStr += ": " + tohex(self.data)
         return myStr
         
     def encode(self):
@@ -109,7 +110,7 @@ class HskBase:
         if len(rx) < 5:
             raise IOError("received data only %d bytes" % len(rx))
         if sum(rx[4:]) & 0xFF:
-            raise IOError("checksum failure: " + rx.hex(sep=' '))
+            raise IOError("checksum failure: " + tohex(rx))
         return HskPacket(rx[1],
                          rx[2],
                          data=rx[4:-1],
@@ -149,6 +150,16 @@ class HskSerial(Serial, HskBase):
         self._writeImpl = self.write
         self._readImpl = lambda : self.read_until(b'\x00')
         
+
+#polyfill for python < 3.8
+def tohex(b, s=' '):
+    if  sys.version_info < (3,8,0):
+        h = b.hex()
+        return s.join(h[i:i+2] for i in range(0,len(h),2))
+    else: 
+        return b.hex(sep=s)
+    
+
 
         
 

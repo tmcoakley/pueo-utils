@@ -262,9 +262,14 @@ try:
     xsct._socket.settimeout(30)
     # PRETTY PRETTY
     if pb is not None:
+        bar_widget = None
+        try:
+            bar_widget = pb.GranularBar()
+        except:
+            bar_widget = pb.Bar()
         widgets = widgets = [ args.remoteFile  + ":",
                               ' ', pb.Percentage(),
-                              ' ', pb.GranularBar(),
+                              ' ', bar_widget,
                               ' ', pb.AdaptiveETA(),
                               ' ', pb.AdaptiveTransferSpeed() ]
         bar = pb.ProgressBar( widgets=widgets,

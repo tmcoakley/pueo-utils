@@ -44,19 +44,22 @@ class HskPacket:
     #  cmd, src range
     prettifiers = {
             ('eTemps', 'TURF') : lambda d, a : {
-                'T_APU_TURF' : getT(d[0], d[1], 'TURF'),
-                'T_RPU_TURF' : getT(d[2],d[3],'TURF') 
+                'T_APU_TURF' : getT(d[0],d[1],'TURF'),
+                'T_RPU_TURF' : getT(d[2],d[3],'TURF')
                 },
             ('eTemps', 'SURF') : lambda d, a : {
-                'T_APU_SURF_' + hex(a) : getT(d[0], d[1], 'SURF'),
-                'T_RPU_SURF_'+ hex(a)  : getT(d[2],d[3],'SURF') },
+                'T_APU_SURF_' + str(surfNum(a)) : getT(d[0], d[1],'SURF'),
+                'T_RPU_SURF_' + str(surfNum(a)) : getT(d[2], d[3],'SURF')
+                },
             ('eTemps', 'TURFIO') : lambda d, a : {
-                'T_TURFIO_' + hex(a) : getT(d[0], d[1], 'TURFIO'),
-                'T_SURF1HS_' + hex(a) : getT(d[2],d[3],'SURFSWAP'),
-                'T_SURF2HS_' + hex(a) : getT(d[4],d[5],'SURFSWAP'),
-                'T_SURF3HS_' + hex(a) : getT(d[6],d[7],'SURFSWAP'),
-                'T_SURF4HS_' + hex(a) : getT(d[8],d[9],'SURFSWAP'),
-                'T_SURF5HS_' + hex(a) : getT(d[10],d[11],'SURFSWAP')
+                'T_TURFIO_'  + str(turfioNum(a)) : getT(d[0], d[1], 'TURFIO'),
+                'T_SURF1HS_' + str(turfioNum(a)) : getT(d[2], d[3], 'SURFSWAP'),
+                'T_SURF2HS_' + str(turfioNum(a)) : getT(d[4], d[5], 'SURFSWAP'),
+                'T_SURF3HS_' + str(turfioNum(a)) : getT(d[6], d[7], 'SURFSWAP'),
+                'T_SURF4HS_' + str(turfioNum(a)) : getT(d[8], d[9], 'SURFSWAP'),
+                'T_SURF5HS_' + str(turfioNum(a)) : getT(d[10],d[11],'SURFSWAP')
+                'T_SURF6HS_' + str(turfioNum(a)) : getT(d[12],d[13],'SURFSWAP')
+                'T_SURF7HS_' + str(turfioNum(a)) : getT(d[14],d[15],'SURFSWAP')
                 }
     }
 
@@ -215,5 +218,11 @@ def deviceType(addr):
     elif addr >= 0x80:
         return 'SURF'
 
+
+def surfNum(addr):
+    return addr - 128
+
+def turfioNum(addr)
+    return (addr-64)/8
 
 

@@ -57,8 +57,8 @@ class HskPacket:
                 'T_SURF2HS_' + str(turfioNum(a)) : getT(d[4], d[5], 'SURFSWAP'),
                 'T_SURF3HS_' + str(turfioNum(a)) : getT(d[6], d[7], 'SURFSWAP'),
                 'T_SURF4HS_' + str(turfioNum(a)) : getT(d[8], d[9], 'SURFSWAP'),
-                'T_SURF5HS_' + str(turfioNum(a)) : getT(d[10],d[11],'SURFSWAP')
-                'T_SURF6HS_' + str(turfioNum(a)) : getT(d[12],d[13],'SURFSWAP')
+                'T_SURF5HS_' + str(turfioNum(a)) : getT(d[10],d[11],'SURFSWAP'),
+                'T_SURF6HS_' + str(turfioNum(a)) : getT(d[12],d[13],'SURFSWAP'),
                 'T_SURF7HS_' + str(turfioNum(a)) : getT(d[14],d[15],'SURFSWAP')
                 }
     }
@@ -222,7 +222,7 @@ def deviceType(addr):
 def surfNum(addr):
     return addr - 128
 
-def turfioNum(addr)
+def turfioNum(addr):
     return (addr-64)/8
 
 

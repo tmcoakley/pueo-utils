@@ -2,8 +2,11 @@
 # YES I KNOW THE NAME OF THE MODULE IS STUPID
 from serial import Serial
 from cobs import cobs
+import sys
 import socket
 from HskPacketParser import HskParser
+
+
 
 
 # dev.send(HskPacket(0x80, 0x00)) as well as fully-filling it
@@ -40,6 +43,31 @@ class HskPacket:
         "eReloadFirmware" : 0xCA
         }
 
+    #  cmd, src range
+    prettifiers = {
+            ('eTemps', 'TURF') : lambda d, a : {
+                'T_APU_TURF' : getT(d[0],d[1],'TURF'),
+                'T_RPU_TURF' : getT(d[2],d[3],'TURF')
+                },
+            ('eTemps', 'SURF') : lambda d, a : {
+                'T_APU_SURF_' + str(surfNum(a)) : getT(d[0], d[1],'SURF'),
+                'T_RPU_SURF_' + str(surfNum(a)) : getT(d[2], d[3],'SURF')
+                },
+            ('eTemps', 'TURFIO') : lambda d, a : {
+                'T_TURFIO_'  + str(turfioNum(a)) : getT(d[0], d[1], 'TURFIO'),
+                'T_SURF1HS_' + str(turfioNum(a)) : getT(d[2], d[3], 'SURFSWAP'),
+                'T_SURF2HS_' + str(turfioNum(a)) : getT(d[4], d[5], 'SURFSWAP'),
+                'T_SURF3HS_' + str(turfioNum(a)) : getT(d[6], d[7], 'SURFSWAP'),
+                'T_SURF4HS_' + str(turfioNum(a)) : getT(d[8], d[9], 'SURFSWAP'),
+                'T_SURF5HS_' + str(turfioNum(a)) : getT(d[10],d[11],'SURFSWAP'),
+                'T_SURF6HS_' + str(turfioNum(a)) : getT(d[12],d[13],'SURFSWAP'),
+                'T_SURF7HS_' + str(turfioNum(a)) : getT(d[14],d[15],'SURFSWAP')
+                }
+    }
+
+
+
+
     strings = dict(zip(cmds.values(),cmds.keys()))
 
     def __init__(self,
@@ -73,11 +101,21 @@ class HskPacket:
             cstr = "UNKNOWN(%2.2x)" % self.cmd
         myStr = cstr + " from " + "%2.2x" % self.src + " to " + "%2.2x" % self.dest
         if len(self.data):
-            if asString:
+
+            pretty_dict = self.prettyDict()
+            if pretty_dict is not None:
+                myStr += ": " + str(pretty_dict)
+            elif asString:
                 myStr += ": " + self.data.decode()
             else:
-                myStr += ": " + self.data.hex(sep=' ')
+                myStr += ": " + tohex(self.data)
         return myStr
+
+
+    def prettyDict(self):
+            pretty_tuple =(self.strings[self.cmd], deviceType(self.src))
+            if pretty_tuple in self.prettifiers:
+                return self.prettifiers[pretty_tuple](self.data, self.src)
         
     def encode(self):
         pkt = bytearray(4)
@@ -111,7 +149,7 @@ class HskBase:
         if len(rx) < 5:
             raise IOError("received data only %d bytes" % len(rx))
         if sum(rx[4:]) & 0xFF:
-            raise IOError("checksum failure: " + rx.hex(sep=' '))
+            raise IOError("checksum failure: " + tohex(rx))
         return HskPacket(rx[1],
                          rx[2],
                          data=rx[4:-1],
@@ -152,6 +190,41 @@ class HskSerial(Serial, HskBase):
         self._readImpl = lambda : self.read_until(b'\x00')
         
 
-        
+#polyfill for python < 3.8
+def tohex(b, s=' '):
+    if  sys.version_info < (3,8,0):
+        h = b.hex()
+        return s.join(h[i:i+2] for i in range(0,len(h),2))
+    else: 
+        return b.hex(sep=s)
+    
+
+def getT(msb, lsb, kind = 'SURF'):
+
+    adc = msb * 256 + lsb; 
+
+    if kind == 'SURF' or kind == 'TURF':
+        return adc * 509.3140064 / (2**16) - 280.2308787
+    elif kind == 'TURFIO':
+        return adc * 503.975 / (2**12) - 273.15
+    elif kind == 'SURFSWAP':
+        return (adc * 10  - 31880) / 42
+    else: 
+        return None
+
+def deviceType(addr):
+    if addr == 0x60:
+        return 'TURF'
+    elif addr in (0x40,0x48,0x50,0x50):
+        return 'TURFIO'
+    elif addr >= 0x80:
+        return 'SURF'
+
+
+def surfNum(addr):
+    return addr - 128
+
+def turfioNum(addr):
+    return (addr-64) >> 
 
 

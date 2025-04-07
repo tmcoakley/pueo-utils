@@ -213,7 +213,7 @@ def getT(msb, lsb, kind = 'SURF'):
 def deviceType(addr):
     if addr == 0x60:
         return 'TURF'
-    elif addr in (0x40,0x48,0x50,0x50):
+    elif addr in (0x40,0x48,0x50,0x58):
         return 'TURFIO'
     elif addr >= 0x80:
         return 'SURF'

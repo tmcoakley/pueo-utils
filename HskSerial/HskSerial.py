@@ -24,6 +24,7 @@ class HskPacket:
         "eIdentify" : 0x12,
         "eCurrents" : 0x13,
         "eStartState" : 0x20,
+        "eSleep" : 0x21,
         "eFwParams" : 0x80,
         "eFwNext" : 0x81,
         "ePROMStartup" : 0x82,
